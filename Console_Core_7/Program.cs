@@ -1,6 +1,7 @@
 ﻿using SharpDxSandbox.Sandbox;
 
-await DirectXSandbox.StartTriangle();
+//await Direct3DSandbox.StartTriangle();
+await Direct2DSandbox.DrawImage();
 
 Console.WriteLine("Hello, World!");
 

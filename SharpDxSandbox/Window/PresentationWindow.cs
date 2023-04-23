@@ -29,7 +29,7 @@ internal sealed class PresentationWindow : IDisposable
             nint thisPtr = (nint)windowGcHandle;
 
             uint extendedStyle = NativeMethods.WsExAppWindow;
-            uint style = NativeMethods.WsOverlapped | NativeMethods.WsVisible;
+            uint style = NativeMethods.WsOverlapped | NativeMethods.WsVisible | NativeMethods.WsMaximizeBox | NativeMethods.WsSysMenu;
 
             if (windowOptions.HasFlag(WindowOptions.TopMost))
             {

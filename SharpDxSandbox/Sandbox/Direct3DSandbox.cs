@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using SharpDX;
 using SharpDX.D3DCompiler;
 using SharpDX.Direct3D;
@@ -9,16 +8,14 @@ using SharpDX.Mathematics.Interop;
 using SharpDxSandbox.DirextXApiHelpers;
 using SharpDxSandbox.Window;
 using Buffer = SharpDX.Direct3D11.Buffer;
-using InfoQueueFilter = SharpDX.Direct3D11.InfoQueueFilter;
-using MapFlags = SharpDX.Direct3D11.MapFlags;
 
 namespace SharpDxSandbox.Sandbox;
 
-public class DirectXSandbox
+public class Direct3DSandbox
 {
     public static async Task StartTriangle()
     {
-        var windowWidth = 200;
+        var windowWidth = 600;
         var windowHeight = 200;
 
         using (var window = new PresenterWindowLoop(windowWidth, windowHeight, WindowOptions.TopMost))
@@ -39,7 +36,7 @@ public class DirectXSandbox
                     ModeDescription = new ModeDescription(windowWidth, windowHeight, Rational.Empty, Format.R8G8B8A8_UNorm),
                     OutputHandle = windowHandle.Value,
                     SampleDescription = new SampleDescription(1, 0),
-                    SwapEffect = SwapEffect.FlipDiscard,
+                    SwapEffect = SwapEffect.FlipSequential,
                     Usage = Usage.RenderTargetOutput,
                 },
                 out var outDevice,
