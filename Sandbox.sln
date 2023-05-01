@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Console_Core_7", "Console_C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpDxSandbox", "SharpDxSandbox\SharpDxSandbox.csproj", "{730A5F56-0E42-46A0-88B5-730568FE6899}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IlWeaving", "IlWeaving\IlWeaving.csproj", "{96167F82-63AE-4952-910B-32B4BD93C70C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{730A5F56-0E42-46A0-88B5-730568FE6899}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{730A5F56-0E42-46A0-88B5-730568FE6899}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{730A5F56-0E42-46A0-88B5-730568FE6899}.Release|Any CPU.Build.0 = Release|Any CPU
+		{96167F82-63AE-4952-910B-32B4BD93C70C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{96167F82-63AE-4952-910B-32B4BD93C70C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{96167F82-63AE-4952-910B-32B4BD93C70C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{96167F82-63AE-4952-910B-32B4BD93C70C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

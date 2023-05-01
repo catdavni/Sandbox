@@ -10,6 +10,7 @@
     </PropertyGroup>
 
       <ItemGroup>
+      <ProjectReference Include="..\IlWeaving\IlWeaving.csproj" />
       <ProjectReference Include="..\SharpDxSandbox\SharpDxSandbox.csproj" />
     </ItemGroup>
 </Project>
