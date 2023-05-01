@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using SharpDX.Mathematics.Interop;
 using SharpDxSandbox.DirextXApiHelpers;
+using SharpDxSandbox.WicHelpers;
 using SharpDxSandbox.Window;
 using AlphaMode = SharpDX.Direct2D1.AlphaMode;
 
@@ -8,9 +9,6 @@ namespace SharpDxSandbox.Sandbox;
 
 public class Direct2DSandbox
 {
-    private static readonly int windowWidth = 600;
-    private static readonly int windowHeight = 400;
-
     public static async Task DrawImage()
     {
         await FromDirect2D();
@@ -19,100 +17,111 @@ public class Direct2DSandbox
 
     private static async Task FromDirect2D()
     {
-        await RunInWindow(Drawing);
+        await new DirextXApiHelpers.Window(600, 400).RunInWindow(Drawing);
 
-        async Task Drawing(WindowHandle windowHandle, CancellationToken cancellation)
-        {
-            using var d3d11device = new SharpDX.Direct3D11.Device(
-                SharpDX.Direct3D.DriverType.Hardware,
-                SharpDX.Direct3D11.DeviceCreationFlags.Debug | SharpDX.Direct3D11.DeviceCreationFlags.BgraSupport);
-
-            using var logger = new DeviceLogger(d3d11device);
-            try
-            {
-                using var dxgiDevice = d3d11device.QueryInterface<SharpDX.DXGI.Device>();
-                using var adapter = dxgiDevice.Adapter;
-                using var dxgiFactory = adapter.GetParent<SharpDX.DXGI.Factory2>();
-                var swapChainDescription = new SharpDX.DXGI.SwapChainDescription1
+        Task Drawing(DirextXApiHelpers.Window window, WindowHandle windowHandle, CancellationToken cancellation)
+            => Task.Run(() =>
                 {
-                    Width = windowWidth,
-                    Height = windowHeight,
-                    Format = SharpDX.DXGI.Format.B8G8R8A8_UNorm, //REQUIRED!!!
-                    SampleDescription = new SharpDX.DXGI.SampleDescription(1, 0), //REQUIRED!!!
-                    Usage = SharpDX.DXGI.Usage.RenderTargetOutput,
-                    BufferCount = 1,
-                    SwapEffect = SharpDX.DXGI.SwapEffect.Discard
-                };
-                using var swapChain = new SharpDX.DXGI.SwapChain1(dxgiFactory, d3d11device, windowHandle.Value, ref swapChainDescription);
-                using var backBuffer = swapChain.GetBackBuffer<SharpDX.DXGI.Surface>(0);
-                using var d2dFactory = new SharpDX.Direct2D1.Factory(SharpDX.Direct2D1.FactoryType.SingleThreaded, SharpDX.Direct2D1.DebugLevel.Information); //dxgiFactory.QueryInterface<SharpDX.Direct2D1.Factory>();
-                using var renderTarget = new SharpDX.Direct2D1.RenderTarget(
-                    d2dFactory,
-                    backBuffer,
-                    new SharpDX.Direct2D1.RenderTargetProperties(new SharpDX.Direct2D1.PixelFormat(SharpDX.DXGI.Format.Unknown, AlphaMode.Premultiplied)));
+                    using var d3d11device = new SharpDX.Direct3D11.Device(
+                        SharpDX.Direct3D.DriverType.Hardware,
+                        SharpDX.Direct3D11.DeviceCreationFlags.Debug | SharpDX.Direct3D11.DeviceCreationFlags.BgraSupport);
 
-                await Task.Run(() =>
+                    using var logger = new DeviceLogger(d3d11device);
+                    try
                     {
-                        var ellipse = new SharpDX.Direct2D1.Ellipse(new RawVector2(windowWidth / 2f, windowHeight / 2f), windowWidth / 2f, windowHeight / 2f);
+                        using var dxgiDevice = d3d11device.QueryInterface<SharpDX.DXGI.Device>();
+                        using var adapter = dxgiDevice.Adapter;
+                        using var dxgiFactory = adapter.GetParent<SharpDX.DXGI.Factory2>();
+                        var swapChainDescription = new SharpDX.DXGI.SwapChainDescription1
+                        {
+                            Width = window.Width,
+                            Height = window.Height,
+                            Format = SharpDX.DXGI.Format.B8G8R8A8_UNorm, //REQUIRED!!!
+                            SampleDescription = new SharpDX.DXGI.SampleDescription(1, 0), //REQUIRED!!!
+                            Usage = SharpDX.DXGI.Usage.RenderTargetOutput,
+                            BufferCount = 1,
+                            SwapEffect = SharpDX.DXGI.SwapEffect.Discard
+                        };
+                        using var swapChain = new SharpDX.DXGI.SwapChain1(dxgiFactory, d3d11device, windowHandle.Value, ref swapChainDescription);
+
+                        using var backBuffer = swapChain.GetBackBuffer<SharpDX.DXGI.Surface>(0);
+                        using var d2dFactory = new SharpDX.Direct2D1.Factory(
+                            SharpDX.Direct2D1.FactoryType.SingleThreaded, SharpDX.Direct2D1.DebugLevel.Information);
+
+                        using var renderTarget = new SharpDX.Direct2D1.RenderTarget(
+                            d2dFactory,
+                            backBuffer,
+                            new SharpDX.Direct2D1.RenderTargetProperties(
+                                new SharpDX.Direct2D1.PixelFormat(SharpDX.DXGI.Format.Unknown, AlphaMode.Premultiplied)));
+
+                        using var wicBitmap = ImageLoader.Load("Resources/1i.jpg");
+                        var ellipse = new SharpDX.Direct2D1.Ellipse(
+                            new RawVector2(window.Width / 2f, window.Height / 2f), window.Width / 2f, window.Height / 2f);
                         var step = 0d;
 
                         while (!cancellation.IsCancellationRequested)
                         {
                             renderTarget.BeginDraw();
                             using var brush = new SharpDX.Direct2D1.SolidColorBrush(renderTarget, new RawColor4(1f, 0f, (float)Math.Sin(step), 1f));
+                            using var d2dBitmap = SharpDX.Direct2D1.Bitmap.FromWicBitmap(renderTarget, wicBitmap);
+                            renderTarget.DrawBitmap(
+                                d2dBitmap,
+                                new RawRectangleF(0f, 0f, window.Width, window.Height),
+                                1f,
+                                SharpDX.Direct2D1.BitmapInterpolationMode.NearestNeighbor);
                             renderTarget.FillEllipse(ellipse, brush);
                             renderTarget.EndDraw();
 
                             swapChain.Present(1, SharpDX.DXGI.PresentFlags.None);
                             step += 0.03;
                         }
-                    },
-                    cancellation);
-            }
-            catch (Exception)
-            {
-                logger.FlushMessages();
-            }
-        }
+                    }
+                    catch (Exception)
+                    {
+                        logger.FlushMessages();
+                    }
+                },
+                cancellation);
     }
 
     private static async Task FromDirect3D11()
     {
-        await RunInWindow(Drawing);
+        await new DirextXApiHelpers.Window(600, 400).RunInWindow(Drawing);
 
-        async Task Drawing(WindowHandle windowHandle, CancellationToken cancellation)
-        {
-            SharpDX.Direct3D11.Device.CreateWithSwapChain(
-                SharpDX.Direct3D.DriverType.Hardware,
-                SharpDX.Direct3D11.DeviceCreationFlags.Debug | SharpDX.Direct3D11.DeviceCreationFlags.BgraSupport,
-                new SharpDX.DXGI.SwapChainDescription
+        Task Drawing(DirextXApiHelpers.Window window, WindowHandle windowHandle, CancellationToken cancellation) =>
+            Task.Run(
+                () =>
                 {
-                    BufferCount = 1,
-                    IsWindowed = true,
-                    ModeDescription = new SharpDX.DXGI.ModeDescription(windowWidth, windowHeight, SharpDX.DXGI.Rational.Empty, SharpDX.DXGI.Format.B8G8R8A8_UNorm),
-                    OutputHandle = windowHandle.Value,
-                    SampleDescription = new SharpDX.DXGI.SampleDescription(1, 0),
-                    SwapEffect = SharpDX.DXGI.SwapEffect.Discard,
-                    Usage = SharpDX.DXGI.Usage.RenderTargetOutput
-                },
-                out var outDevice,
-                out var outSwapChain);
-            using var logger = new DeviceLogger(outDevice);
-            using var device = outDevice;
-            using var swapChain = outSwapChain;
-            using var dxgiDevice = device.QueryInterface<SharpDX.DXGI.Device>();
+                    SharpDX.Direct3D11.Device.CreateWithSwapChain(
+                        SharpDX.Direct3D.DriverType.Hardware,
+                        SharpDX.Direct3D11.DeviceCreationFlags.Debug | SharpDX.Direct3D11.DeviceCreationFlags.BgraSupport,
+                        new SharpDX.DXGI.SwapChainDescription
+                        {
+                            BufferCount = 1,
+                            IsWindowed = true,
+                            ModeDescription = new SharpDX.DXGI.ModeDescription(window.Width, window.Height, SharpDX.DXGI.Rational.Empty, SharpDX.DXGI.Format.B8G8R8A8_UNorm),
+                            OutputHandle = windowHandle.Value,
+                            SampleDescription = new SharpDX.DXGI.SampleDescription(1, 0),
+                            SwapEffect = SharpDX.DXGI.SwapEffect.Discard,
+                            Usage = SharpDX.DXGI.Usage.RenderTargetOutput
+                        },
+                        out var outDevice,
+                        out var outSwapChain);
+                    using var logger = new DeviceLogger(outDevice);
 
-            try
-            {
-                using var backBuffer = swapChain.GetBackBuffer<SharpDX.DXGI.Surface>(0);
-                var renderTargetProps = new SharpDX.Direct2D1.RenderTargetProperties(new SharpDX.Direct2D1.PixelFormat(SharpDX.DXGI.Format.Unknown, AlphaMode.Premultiplied));
-                using var factory = new SharpDX.Direct2D1.Factory(SharpDX.Direct2D1.FactoryType.SingleThreaded, SharpDX.Direct2D1.DebugLevel.Information);
-                using var renderTarget = new SharpDX.Direct2D1.RenderTarget(factory, backBuffer, renderTargetProps);
-
-                await Task.Run(
-                    () =>
+                    try
                     {
-                        var ellipse = new SharpDX.Direct2D1.Ellipse(new RawVector2(windowWidth / 2f, windowHeight / 2f), windowWidth / 2f, windowHeight / 2f);
+                        using var device = outDevice;
+                        using var swapChain = outSwapChain;
+                        using var dxgiDevice = device.QueryInterface<SharpDX.DXGI.Device>();
+
+                        using var backBuffer = swapChain.GetBackBuffer<SharpDX.DXGI.Surface>(0);
+                        var renderTargetProps = new SharpDX.Direct2D1.RenderTargetProperties(new SharpDX.Direct2D1.PixelFormat(SharpDX.DXGI.Format.Unknown, AlphaMode.Premultiplied));
+                        using var factory = new SharpDX.Direct2D1.Factory(SharpDX.Direct2D1.FactoryType.SingleThreaded, SharpDX.Direct2D1.DebugLevel.Information);
+                        using var renderTarget = new SharpDX.Direct2D1.RenderTarget(factory, backBuffer, renderTargetProps);
+
+                        var ellipse = new SharpDX.Direct2D1.Ellipse(
+                            new RawVector2(window.Width / 2f, window.Height / 2f), window.Width / 2f, window.Height / 2f);
                         var sw = Stopwatch.StartNew();
                         while (!cancellation.IsCancellationRequested)
                         {
@@ -126,28 +135,13 @@ public class Direct2DSandbox
 
                             swapChain.Present(1, SharpDX.DXGI.PresentFlags.None);
                         }
-                    },
-                    cancellation);
-            }
-            catch (Exception ex)
-            {
-                logger.FlushMessages();
-            }
-        }
-    }
-
-    private static async Task RunInWindow(Func<WindowHandle, CancellationToken, Task> drawing)
-    {
-        using var window = new PresenterWindowLoop(windowWidth, windowHeight, WindowOptions.TopMost);
-        window.KeyPressed += (_, eventArgs) => Console.WriteLine(eventArgs.Input);
-
-        var windowHandle = window.GetWindowHandleAsync().Result;
-
-        using var drawingsCancellation = new CancellationTokenSource();
-        window.WindowClosed += (_, _) => { drawingsCancellation.Cancel(); };
-
-        using var leakGuard = new MemoryLeakGuard(MemoryLeakGuard.LeakBehavior.ThrowException);
-        await drawing(windowHandle, drawingsCancellation.Token);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.FlushMessages();
+                    }
+                },
+                cancellation);
     }
 
     #region Sandbox
