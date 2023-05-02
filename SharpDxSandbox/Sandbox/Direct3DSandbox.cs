@@ -49,20 +49,12 @@ public static class Direct3DSandbox
                             new(new(0f, 0.9f, 0f), Color.Blue),
                             new(new(-0.5f, -0.3f, 0f), Color.Red),
                             new(new(-0.3f, 0.7f, 0f), Color.Green),
-
-                            new(new(0f, 0.9f, 0f), Color.Red),
                             new(new(0.3f, 0.7f, 0f), Color.Green),
                             new(new(0.5f, -0.3f, 0f), Color.Blue),
-                            
-                            new(new(0f, 0.9f, 0f), Color.Blue),
-                            new(new(0.5f, -0.3f, 0f), Color.Red),
-                            new(new(-0.5f, -0.3f, 0f), Color.Green),
-                            
-                            new(new(0.5f, -0.3f, 0f), Color.Red),
                             new(new(0f, -0.7f, 0f), Color.Green),
-                            new(new(-0.5f, -0.3f, 0f), Color.Blue),
                         };
 
+                        // vertex buffer
                         using var vertexDataStream = DataStream.Create(vertices, true, false);
                         using var vertexBuffer = new Buffer(
                             device,
@@ -74,6 +66,26 @@ public static class Direct3DSandbox
                                 //CpuAccessFlags = CpuAccessFlags.None,
                                 SizeInBytes = Marshal.SizeOf<ColoredVertex>() * vertices.Length
                             });
+ 
+                        // index buffer
+                        var indices = new uint[]
+                        {
+                            0, 1, 2,
+                            0, 3, 4,
+                            0, 4, 1,
+                            4, 5, 1
+                        };
+                        using var indexDataStream = DataStream.Create(indices, true, false);
+                        using var indexBuffer = new Buffer(
+                            device,
+                            indexDataStream,
+                            new BufferDescription
+                            {
+                                StructureByteStride = Marshal.SizeOf<int>(),
+                                BindFlags = BindFlags.IndexBuffer,
+                                SizeInBytes = Marshal.SizeOf<int>() * indices.Length
+                            });
+                        device.ImmediateContext.InputAssembler.SetIndexBuffer(indexBuffer, Format.R32_UInt, 0);
 
                         // creating shaders
                         using var vertexShaderByteCode =
@@ -110,7 +122,8 @@ public static class Direct3DSandbox
                             device.ImmediateContext.OutputMerger.SetRenderTargets(renderTargetView);
                             var color = new RawColor4(0.5f, (float)Math.Sin(colorShift), 0, 1f);
                             device.ImmediateContext.ClearRenderTargetView(renderTargetView, new RawColor4(1f, 1f, 1f, 1f));
-                            device.ImmediateContext.Draw(vertices.Length, 0);
+
+                            device.ImmediateContext.DrawIndexed(indices.Length, 0, 0);
 
                             var presentResult = swapChain.Present(1, PresentFlags.None);
                             if (presentResult.Failure)
