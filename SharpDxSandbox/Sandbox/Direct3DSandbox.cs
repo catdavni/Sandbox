@@ -44,19 +44,17 @@ public class Direct3DSandbox
 
                     try
                     {
-                        Vertex[] vertices =
+                        ColoredVertex[] vertices =
                         {
-                            // new(0.0f, 0.5f, 0.0f, new Color4(1.0f, 0.0f, 0.0f, 1.0f)),
-                            // new(0.45f, -0.5f, 0.0f, new Color4(1.0f, 1.0f, 0.0f, 1.0f)),
-                            // new(-0.45f, -0.5f, 0.0f, new Color4(1.0f, 0.0f, 1.0f, 1.0f))
+
+                            new(new(0f, 0f, 0f), Color.Red),
+                            new(new(-1f, -1f, 0f), Color.Green),
+                            new(new(-1f, 1.1f, 0f), Color.Blue),
                             
-                            new(0.0f, 0.0f, 0.0f, new Color4(1.0f, 0.0f, 0.0f, 1.0f)),
-                            new(-1.0f, -1.0f, 0.0f, new Color4(0.0f, 1.0f, 0.0f, 1.0f)),
-                            new(-1.0f, 1.1f, 0.0f, new Color4(0.0f, 0.0f, 1.0f, 1.0f)),
+                            new(new(1f, -1f, 0f), Color.Red),
+                            new(new(0f, 0f, 0f), new Color(1.0f, 1.0f, 0.0f)),
+                            new(new(1f, 1f, 0f), new (1.0f, 0.0f, 1.0f))
                             
-                            new(1.0f, -1.0f, 0.0f, new Color4(1.0f, 0.0f, 0.0f, 1.0f)),
-                            new(0.0f, 0.0f, 0.0f, new Color4(1.0f, 1.0f, 0.0f, 1.0f)),
-                            new(1.0f, 1.0f, 0.0f, new Color4(1.0f, 0.0f, 1.0f, 1.0f))
                         };
 
                         using var vertexDataStream = DataStream.Create(vertices, true, false);
@@ -68,7 +66,7 @@ public class Direct3DSandbox
                                 //Usage = ResourceUsage.Default,
                                 BindFlags = BindFlags.VertexBuffer,
                                 //CpuAccessFlags = CpuAccessFlags.None,
-                                SizeInBytes = Marshal.SizeOf<Vertex>() * vertices.Length
+                                SizeInBytes = Marshal.SizeOf<ColoredVertex>() * vertices.Length
                             });
 
                         // creating shaders
@@ -85,7 +83,7 @@ public class Direct3DSandbox
                         // setting input layout
                         var positionInputElement = new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0);
                         var colorOffset = Format.R32G32B32_Float.SizeOfInBytes();
-                        var colorInputElement = new InputElement("COLOR", 0, Format.R32G32B32A32_Float, colorOffset, 0);
+                        var colorInputElement = new InputElement("COLOR", 0, Format.R32G32B32_Float, colorOffset, 0);
                         using var inputLayout = new InputLayout(device, vertexShaderByteCode, new[] { positionInputElement, colorInputElement });
                         device.ImmediateContext.InputAssembler.InputLayout = inputLayout;
 
@@ -97,17 +95,16 @@ public class Direct3DSandbox
                         //--------------------
 
                         var colorShift = 0f;
-                        var stride = Marshal.SizeOf<Vertex>();
+                        var stride = Marshal.SizeOf<ColoredVertex>();
                         device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
                         device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBuffer, stride, 0));
-
 
                         while (!cancellation.IsCancellationRequested)
                         {
                             device.ImmediateContext.OutputMerger.SetRenderTargets(renderTargetView);
                             device.ImmediateContext.ClearRenderTargetView(renderTargetView, new RawColor4(0.5f, (float)Math.Sin(colorShift), 0, 1f));
                             device.ImmediateContext.Draw(vertices.Length, 0);
-                            
+
                             var presentResult = swapChain.Present(1, PresentFlags.None);
                             if (presentResult.Failure)
                             {
@@ -127,19 +124,16 @@ public class Direct3DSandbox
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct Vertex
-    {
-        public readonly float X;
-        public readonly float Y;
-        public readonly float Z;
-        private readonly Color4 Color;
+    private record struct ColoredVertex(Vertex Vertex, Color Color);
+   
+    [StructLayout(LayoutKind.Sequential)]
+    private readonly record struct Vertex(float X, float Y, float Z);
 
-        public Vertex(float x, float y, float z, Color4 color)
-        {
-            X = x;
-            Y = y;
-            Z = z;
-            Color = color;
-        }
+    [StructLayout(LayoutKind.Sequential)]
+    private readonly record struct Color(float R, float G, float B)
+    {
+        public static Color Red => new(1f, 0f, 0f);
+        public static Color Green => new(0f, 1f, 0f);
+        public static Color Blue => new(0f, 0f, 1f);
     }
 }

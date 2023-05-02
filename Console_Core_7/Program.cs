@@ -3,9 +3,9 @@
 using IlWeaving;
 using SharpDxSandbox.Sandbox;
 
-RunFactorial();
+//RunFactorial();
 
-//await Direct3DSandbox.StartTriangle();
+await Direct3DSandbox.StartTriangle();
 //await Direct2DSandbox.DrawImage();
 
 Console.WriteLine("Hello, World!");
