@@ -1,122 +1,64 @@
-﻿using System.Reflection.Emit;
+﻿using System.Numerics;
+using System.Reflection.Emit;
 using System.Reflection;
+using GrEmit;
 
 namespace IlWeaving;
 
+public delegate BigInteger RunFactorial(BigInteger initial, BigInteger current, BigInteger accumulator);
+
 public static class TailRecursion
 {
-    public static Func<ulong, ulong, ulong> GenerateFacrorial()
+    public static RunFactorial GenerateFactorial(bool useTailOptimization)
     {
-        var assemblyName = new AssemblyName("PiuPiu");
+        var assemblyName = new AssemblyName("TailRecursionExperiment");
         var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
         var moduleBuilder = assemblyBuilder.DefineDynamicModule(assemblyName.Name!);
 
-        var type = moduleBuilder.DefineType("Ololo", TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Abstract | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
-        var method = type.DefineMethod("TailFactorial", MethodAttributes.HideBySig | MethodAttributes.Static | MethodAttributes.Public, typeof(ulong), new[] { typeof(ulong), typeof(ulong) });
-        method.DefineParameter(1, ParameterAttributes.None, "n");
+        var type = moduleBuilder.DefineType("Factorial", TypeAttributes.Public | TypeAttributes.Class | TypeAttributes.Abstract | TypeAttributes.Sealed | TypeAttributes.BeforeFieldInit);
+        var method = type.DefineMethod("TailOptimization", MethodAttributes.HideBySig | MethodAttributes.Static | MethodAttributes.Public, typeof(BigInteger), new[] { typeof(BigInteger), typeof(BigInteger), typeof(BigInteger) });
+        method.DefineParameter(1, ParameterAttributes.None, "initial"); // used for troubleshooting
+        method.DefineParameter(1, ParameterAttributes.None, "current");
         method.DefineParameter(2, ParameterAttributes.None, "acc");
+        
+        using (var il = new GroboIL(method))
+        {
+            var exit = il.DefineLabel("exit");
 
-        var il = method.GetILGenerator();
-        var L008 = il.DefineLabel();
-        var IL_000b = il.DefineLabel();
-        var IL_0017 = il.DefineLabel();
+            il.Ldarg(1);
+            il.Ldc_I8(0);
+            il.Call(typeof(BigInteger).GetMethod("op_Equality", BindingFlags.Public | BindingFlags.Static, new[] { typeof(BigInteger), typeof(long) }));
+            il.Brtrue(exit);
 
-        var localN = il.DeclareLocal(typeof(ulong));
-        var localAcc = il.DeclareLocal(typeof(ulong));
-        il.Emit(OpCodes.Ldarg_0);
-        il.Emit(OpCodes.Stloc, localN);
-        il.Emit(OpCodes.Ldarg_1);
-        il.Emit(OpCodes.Stloc, localAcc);
+            il.Ldarg(1);
+            il.Ldc_I8(1);
+            il.Call(typeof(BigInteger).GetMethod("op_Equality", BindingFlags.Public | BindingFlags.Static, new[] { typeof(BigInteger), typeof(long) }));
+            il.Brtrue(exit);
 
-        il.EmitWriteLine(localN);
-        il.EmitWriteLine(localAcc);
+            il.Ldarg(0);
+            il.Ldarg(1);
+            il.Ldc_I8(1);
+            il.Call(typeof(BigInteger).GetMethod("op_Implicit", BindingFlags.Public | BindingFlags.Static, new[] { typeof(long) }));
+            il.Call(typeof(BigInteger).GetMethod("op_Subtraction", BindingFlags.Public | BindingFlags.Static, new[] { typeof(BigInteger), typeof(BigInteger) }));
+            il.Ldarg(2);
+            il.Ldarg(1);
+            il.Call(typeof(BigInteger).GetMethod("op_Multiply", BindingFlags.Public | BindingFlags.Static, new[] { typeof(BigInteger), typeof(BigInteger) }));
+            il.Call(method, tailcall: useTailOptimization);
+            il.Ret();
 
-        il.Emit(OpCodes.Ldarg_0);
-        il.Emit(OpCodes.Brfalse_S, L008);
-        il.Emit(OpCodes.Ldarg_0);
-        il.Emit(OpCodes.Ldc_I4_1);
-        il.Emit(OpCodes.Conv_I8);
-        il.Emit(OpCodes.Bne_Un_S, IL_000b);
-        il.MarkLabel(L008);
-        il.Emit(OpCodes.Ldarg_1);
-        il.Emit(OpCodes.Br_S, IL_0017);
-        il.MarkLabel(IL_000b);
-        il.Emit(OpCodes.Ldarg_0);
-        il.Emit(OpCodes.Ldc_I4_1);
-        il.Emit(OpCodes.Conv_I8);
-        il.Emit(OpCodes.Sub);
-        il.Emit(OpCodes.Ldarg_1);
-        il.Emit(OpCodes.Ldarg_0);
-        il.Emit(OpCodes.Mul);
-        il.EmitCall(OpCodes.Call, method, Type.EmptyTypes);
-        il.MarkLabel(IL_0017);
-        il.Emit(OpCodes.Ret);
-            
-
-        //using (var il = new GroboIL(method))
-        //{
-        //    var L008 = il.DefineLabel("008");
-        //    var IL_000b = il.DefineLabel("IL_000b");
-        //    var IL_0017 = il.DefineLabel("IL_0017");
-
-        //    il.Ldarg(0);
-        //    il.Brfalse(L008);
-        //    il.Ldarg(0);
-        //    il.Ldc_I4(1);
-        //    il.Conv<long>();
-        //    il.Bne_Un(IL_000b);
-        //    il.MarkLabel(L008);
-        //    il.Ldarg(1);
-        //    il.Br(IL_0017);
-        //    il.MarkLabel(IL_000b);
-        //    il.Ldarg(0);
-        //    il.Ldc_I4(1);
-        //    il.Conv<long>();
-        //    il.Sub();
-        //    il.Ldarg(1);
-        //    il.Ldarg(0);
-        //    il.Mul();
-        //    il.Call(method, tailcall: false);
-        //    il.MarkLabel(IL_0017);
-        //    il.Ret();
-
-
-
-
-        //    ///////////////////////////////
-        //    //var exit = il.DefineLabel("exit");
-
-        //    //il.Ldarg(0);
-        //    //il.Ldc_I8(0);
-        //    //il.Ceq();
-        //    //il.Brtrue(exit);
-
-        //    //il.Ldarg(0);
-        //    //il.Ldc_I8(1);
-        //    //il.Ceq();
-        //    //il.Brtrue(exit);
-
-        //    //il.Ldarg(0);
-        //    //il.Ldc_I8(1);
-        //    //il.Sub();
-        //    //il.Ldarg(1);
-        //    //il.Ldarg(0);
-        //    //il.Mul();
-        //    //il.Call(method, tailcall: false);
-        //    //il.Ret();
-
-        //    //il.MarkLabel(exit);
-        //    //il.Ldarg(1);
-        //    //il.Ret();
-
-        //}
+            il.MarkLabel(exit);
+            il.Ldarg(2);
+            il.Ret();
+        }
 
         var compiled = type.CreateType();
         var compiledMethod = compiled.GetMethod(method.Name, BindingFlags.Public | BindingFlags.Static);
         new Lokad.ILPack.AssemblyGenerator().GenerateAssembly(assemblyBuilder, assemblyName.Name + ".dll");
 
-        return compiledMethod.CreateDelegate<Func<ulong, ulong, ulong>>();
+        return compiledMethod!.CreateDelegate<RunFactorial>();
     }
 
-    public static ulong CompiledFactorial(ulong n, ulong acc) => n != 0UL && n != 1UL ? CompiledFactorial(n - 1UL, acc * n) : acc;
+    public static BigInteger RunGeneratedFactorial(BigInteger n, bool useTailOptimization) => GenerateFactorial(useTailOptimization)(n, n, 1);
+
+    public static BigInteger CompiledFactorial(BigInteger n, BigInteger acc) => n != 0 && n != 1 ? CompiledFactorial(n - 1, acc * n) : acc;
 }
