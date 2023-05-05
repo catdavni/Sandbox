@@ -46,7 +46,7 @@ public static class Direct3DSandbox
                     {
                         ColoredVertex[] vertices =
                         {
-                            new(new(0f, 0.9f, 0f), Color.Blue),
+                            new(new(0f, 1f, 0f), Color.Blue),
                             new(new(-0.5f, -0.3f, 0f), Color.Red),
                             new(new(-0.3f, 0.7f, 0f), Color.Green),
                             new(new(0.3f, 0.7f, 0f), Color.Green),
@@ -112,15 +112,35 @@ public static class Direct3DSandbox
                         device.ImmediateContext.Rasterizer.SetViewport(0f, 0f, window.Width, window.Height);
                         //--------------------
 
-                        var colorShift = 0f;
+                        var iterationShift = 0f;
                         var stride = Marshal.SizeOf<ColoredVertex>();
                         device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
                         device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBuffer, stride, 0));
 
                         while (!cancellation.IsCancellationRequested)
                         {
+                            var rotationXMatrix = new float[]
+                            {
+                                (float) Math.Cos(iterationShift), (float)Math.Sin(iterationShift), 0f, 0f,
+                                (float) -Math.Sin(iterationShift), (float)Math.Cos(iterationShift), 0f, 0f,
+                                0f, 0f, 1f, 0f,
+                                0f, 0f, 0f, 1f
+                            };
+                            
+                            using var rotationX = DataStream.Create(rotationXMatrix, true, false);
+                            using var rotationConstantBuffer = new Buffer(device,
+                                rotationX,
+                                new BufferDescription()
+                                {
+                                    BindFlags = BindFlags.ConstantBuffer,
+                                    Usage = ResourceUsage.Default,
+                                    //CpuAccessFlags = CpuAccessFlags.Write,
+                                    SizeInBytes = Marshal.SizeOf<float>() * rotationXMatrix.Length
+                                });
+                            device.ImmediateContext.VertexShader.SetConstantBuffer(0, rotationConstantBuffer);
+                            
                             device.ImmediateContext.OutputMerger.SetRenderTargets(renderTargetView);
-                            var color = new RawColor4(0.5f, (float)Math.Sin(colorShift), 0, 1f);
+                            var color = new RawColor4(0.5f, (float)Math.Sin(iterationShift), 0, 1f);
                             device.ImmediateContext.ClearRenderTargetView(renderTargetView, new RawColor4(1f, 1f, 1f, 1f));
 
                             device.ImmediateContext.DrawIndexed(indices.Length, 0, 0);
@@ -131,7 +151,7 @@ public static class Direct3DSandbox
                                 logger.FlushMessages();
                             }
 
-                            colorShift += 0.03f;
+                            iterationShift += 0.03f;
                         }
                     }
                     catch (SEHException)

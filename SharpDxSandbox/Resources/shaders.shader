@@ -5,11 +5,16 @@
     float3 color : COLOR;
 };
 
+cbuffer ConstantBuffer : register(b0)
+{
+   float4x4 WorldViewProjection;
+};
+
 VOut VShader(float3 position : POSITION, float3 color : COLOR)
 {
     VOut output;
 
-    output.position = float4(position, 1.0f);
+    output.position = mul(float4(position, 1.0f), WorldViewProjection);
     output.color = color;
 
     return output;
