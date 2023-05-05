@@ -7,7 +7,7 @@
 
 cbuffer ConstantBuffer : register(b0)
 {
-   float4x4 WorldViewProjection;
+  row_major float4x4 WorldViewProjection;
 };
 
 VOut VShader(float3 position : POSITION, float3 color : COLOR)

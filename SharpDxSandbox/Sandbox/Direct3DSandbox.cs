@@ -121,8 +121,8 @@ public static class Direct3DSandbox
                         {
                             var rotationXMatrix = new float[]
                             {
-                                (float) Math.Cos(iterationShift), (float)Math.Sin(iterationShift), 0f, 0f,
-                                (float) -Math.Sin(iterationShift), (float)Math.Cos(iterationShift), 0f, 0f,
+                                (float)window.Height / window.Width * (float)Math.Cos(iterationShift), (float)Math.Sin(iterationShift), 0f, 0f,
+                                (float)window.Height / window.Width * (float) -Math.Sin(iterationShift), (float)Math.Cos(iterationShift), 0f, 0f,
                                 0f, 0f, 1f, 0f,
                                 0f, 0f, 0f, 1f
                             };
@@ -152,6 +152,7 @@ public static class Direct3DSandbox
                             }
 
                             iterationShift += 0.03f;
+                            iterationShift %= (float)(2f*Math.PI);
                         }
                     }
                     catch (SEHException)
