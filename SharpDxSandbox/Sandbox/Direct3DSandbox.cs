@@ -14,7 +14,7 @@ namespace SharpDxSandbox.Sandbox;
 
 public static class Direct3DSandbox
 {
-    public static async Task StartTriangle()
+    public static async Task StartTest()
     {
         await new DirextXApiHelpers.Window(600, 400).RunInWindow(Drawing);
 
@@ -89,9 +89,9 @@ public static class Direct3DSandbox
 
                         // creating shaders
                         using var vertexShaderByteCode =
-                            ShaderBytecode.CompileFromFile("Resources/shaders.shader", "VShader", "vs_4_0");
+                            ShaderBytecode.CompileFromFile("Resources/test.shader", "VShader", "vs_4_0");
                         using var pixelShaderByteCode =
-                            ShaderBytecode.CompileFromFile("Resources/shaders.shader", "PShader", "ps_4_0");
+                            ShaderBytecode.CompileFromFile("Resources/test.shader", "PShader", "ps_4_0");
                         using var vertexShader = new VertexShader(device, vertexShaderByteCode);
                         using var pixelShader = new PixelShader(device, pixelShaderByteCode);
                         device.ImmediateContext.VertexShader.Set(vertexShader);
@@ -119,23 +119,21 @@ public static class Direct3DSandbox
 
                         while (!cancellation.IsCancellationRequested)
                         {
-                            var rotationXMatrix = new float[]
-                            {
-                                (float)window.Height / window.Width * (float)Math.Cos(iterationShift), (float)Math.Sin(iterationShift), 0f, 0f,
-                                (float)window.Height / window.Width * (float) -Math.Sin(iterationShift), (float)Math.Cos(iterationShift), 0f, 0f,
-                                0f, 0f, 1f, 0f,
-                                0f, 0f, 0f, 1f
-                            };
-                            
-                            using var rotationX = DataStream.Create(rotationXMatrix, true, false);
+                            var vertexConstantBufferMatrix = SharpDX.Matrix.RotationZ(iterationShift)
+                                                             * SharpDX.Matrix.Scaling((float)window.Height / window.Width, 1f, 1f);
+                            // GPU store array as column based but CPU as row based
+                            vertexConstantBufferMatrix.Transpose();
+                            var vertexConstantBufferData = vertexConstantBufferMatrix.ToArray();
+                           
+                            using var vertexConstantBufferDataStream = DataStream.Create(vertexConstantBufferData.ToArray(), true, false);
                             using var rotationConstantBuffer = new Buffer(device,
-                                rotationX,
+                                vertexConstantBufferDataStream,
                                 new BufferDescription()
                                 {
                                     BindFlags = BindFlags.ConstantBuffer,
                                     Usage = ResourceUsage.Default,
                                     //CpuAccessFlags = CpuAccessFlags.Write,
-                                    SizeInBytes = Marshal.SizeOf<float>() * rotationXMatrix.Length
+                                    SizeInBytes = Marshal.SizeOf<float>() * vertexConstantBufferData.Length
                                 });
                             device.ImmediateContext.VertexShader.SetConstantBuffer(0, rotationConstantBuffer);
                             
