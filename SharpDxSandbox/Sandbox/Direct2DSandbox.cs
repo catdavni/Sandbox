@@ -17,7 +17,7 @@ public class Direct2DSandbox
 
     private static async Task FromDirect2D()
     {
-        await new DirextXApiHelpers.Window(3840, 2160).RunInWindow(Drawing);
+        await new DirextXApiHelpers.Window(600, 600).RunInWindow(Drawing);
 
         Task Drawing(DirextXApiHelpers.Window window, WindowHandle windowHandle, CancellationToken cancellation)
             => Task.Run(() =>
@@ -70,8 +70,8 @@ public class Direct2DSandbox
 
                         var boxX = 0;
                         var boxY = 0;
-                        var boxW = 3840; //boxWidth - boxX;
-                        var boxH = 2160; //boxHeight - boxY;
+                        var boxW = window.Width; //boxWidth - boxX;
+                        var boxH = window.Height; //boxHeight - boxY;
                         //var sourceRect = CalculateSourceRect(imgWidth, imgHeight, ScaleBehavior.Fit).ToMpRect(); //new RawRectangleF(0f, 0f, window.Width, window.Height);
                         //var destRect = CalculateDestRect(boxX, boxY, boxW, boxH, imgWidth, imgHeight, ScaleBehavior.Fit).ToMpRect();
                         var boxRect = new Rect2F(boxX, boxY, boxW, boxH).ToMpRect();

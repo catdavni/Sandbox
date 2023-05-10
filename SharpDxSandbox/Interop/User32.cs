@@ -34,8 +34,22 @@ namespace SharpDxSandbox.Interop
             IntPtr handleMenu,
             IntPtr handleInstance,
             IntPtr param)
-            => NativeMethods.CreateWindowEx(extendedStyle, className, windowName, style, x, y, width, height, hwndParent, handleMenu, handleInstance, param)
+        {
+            return NativeMethods.CreateWindowEx(
+                    extendedStyle,
+                    className, 
+                    windowName, 
+                    style, 
+                    x, 
+                    y, 
+                    width, 
+                    height,
+                    hwndParent,
+                    handleMenu, 
+                    handleInstance,
+                    param)
                 .ThrowWinErrorIfNullPtr();
+        }
 
         [SuppressMessage("Naming", "CA1711:Identifiers should not have incorrect suffix", Justification = "Native function name")]
         public static IntPtr TryCreateWindowEx(
@@ -110,9 +124,46 @@ namespace SharpDxSandbox.Interop
                 IntPtr handleInstance,
                 IntPtr param);
 
+            [DllImport("user32.dll")]
+            internal static extern bool AdjustWindowRectEx(ref Rect lpRect, uint dwStyle, bool bMenu, uint dwExStyle);
+
             [DllImport(User32Dll, SetLastError = true)]
             [return: MarshalAs(UnmanagedType.Bool)]
             internal static extern bool DestroyWindow(IntPtr hwnd);
+
+            [StructLayout(LayoutKind.Sequential)]
+            public record struct Rect(int Left, int Top, int Right, int Bottom)
+            {
+                public int X
+                {
+                    get => Left;
+                    set { Right -= (Left - value); Left = value; }
+                }
+
+                public int Y
+                {
+                    get => Top;
+                    set { Bottom -= (Top - value); Top = value; }
+                }
+
+                public int Height
+                {
+                    get => Bottom - Top;
+                    set { Bottom = value + Top; }
+                }
+
+                public int Width
+                {
+                    get => Right - Left;
+                    set { Right = value + Left; }
+                }
+
+
+                public override string ToString()
+                {
+                    return string.Format(System.Globalization.CultureInfo.CurrentCulture, "{{Left={0},Top={1},Right={2},Bottom={3}}}", Left, Top, Right, Bottom);
+                }
+            }
         }
     }
 }
