@@ -5,8 +5,8 @@ using SharpDxSandbox.Sandbox;
 
 //RunFactorial();
 
-await Direct3DSandbox.StartTest();
-//await Direct2DSandbox.DrawImage();
+//await Direct3DSandbox.StartTriangle();
+await Direct2DSandbox.DrawImage();
 
 Console.WriteLine("Hello, World!");
 

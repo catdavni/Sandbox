@@ -17,7 +17,7 @@ public class Direct2DSandbox
 
     private static async Task FromDirect2D()
     {
-        await new DirextXApiHelpers.Window(600, 400).RunInWindow(Drawing);
+        await new DirextXApiHelpers.Window(3840, 2160).RunInWindow(Drawing);
 
         Task Drawing(DirextXApiHelpers.Window window, WindowHandle windowHandle, CancellationToken cancellation)
             => Task.Run(() =>
@@ -46,7 +46,8 @@ public class Direct2DSandbox
 
                         using var backBuffer = swapChain.GetBackBuffer<SharpDX.DXGI.Surface>(0);
                         using var d2dFactory = new SharpDX.Direct2D1.Factory(
-                            SharpDX.Direct2D1.FactoryType.SingleThreaded, SharpDX.Direct2D1.DebugLevel.Information);
+                            SharpDX.Direct2D1.FactoryType.SingleThreaded,
+                            SharpDX.Direct2D1.DebugLevel.Information);
 
                         using var renderTarget = new SharpDX.Direct2D1.RenderTarget(
                             d2dFactory,
@@ -54,22 +55,41 @@ public class Direct2DSandbox
                             new SharpDX.Direct2D1.RenderTargetProperties(
                                 new SharpDX.Direct2D1.PixelFormat(SharpDX.DXGI.Format.Unknown, AlphaMode.Premultiplied)));
 
-                        using var wicBitmap = ImageLoader.Load("Resources/1i.jpg");
+                        using var wicBitmap = ImageLoader.Load("Resources/4i.jpg");
                         var ellipse = new SharpDX.Direct2D1.Ellipse(
-                            new RawVector2(window.Width / 2f, window.Height / 2f), window.Width / 2f, window.Height / 2f);
+                            new RawVector2(window.Width / 2f, window.Height / 2f),
+                            window.Width / 2f,
+                            window.Height / 2f);
                         var step = 0d;
+                        using var d2dBitmap = SharpDX.Direct2D1.Bitmap.FromWicBitmap(renderTarget, wicBitmap);
+
+                        var boxWidth = (float)window.Width * 0.5f;
+                        var boxHeight = (float)window.Height * 0.5f;
+                        var imgWidth = d2dBitmap.Size.Width;
+                        var imgHeight = d2dBitmap.Size.Height;
+
+                        var boxX = 0;
+                        var boxY = 0;
+                        var boxW = 3840; //boxWidth - boxX;
+                        var boxH = 2160; //boxHeight - boxY;
+                        //var sourceRect = CalculateSourceRect(imgWidth, imgHeight, ScaleBehavior.Fit).ToMpRect(); //new RawRectangleF(0f, 0f, window.Width, window.Height);
+                        //var destRect = CalculateDestRect(boxX, boxY, boxW, boxH, imgWidth, imgHeight, ScaleBehavior.Fit).ToMpRect();
+                        var boxRect = new Rect2F(boxX, boxY, boxW, boxH).ToMpRect();
+                        var (sourceRect, destRect) = CalculateImageRects(boxX, boxY, boxW, boxH, imgWidth, imgHeight, ScaleBehavior.None);
 
                         while (!cancellation.IsCancellationRequested)
                         {
                             renderTarget.BeginDraw();
                             using var brush = new SharpDX.Direct2D1.SolidColorBrush(renderTarget, new RawColor4(1f, 0f, (float)Math.Sin(step), 1f));
-                            using var d2dBitmap = SharpDX.Direct2D1.Bitmap.FromWicBitmap(renderTarget, wicBitmap);
+
+                            renderTarget.FillRectangle(boxRect, brush);
                             renderTarget.DrawBitmap(
                                 d2dBitmap,
-                                new RawRectangleF(0f, 0f, window.Width, window.Height),
+                                destRect.ToMpRect(),
                                 1f,
-                                SharpDX.Direct2D1.BitmapInterpolationMode.NearestNeighbor);
-                            renderTarget.FillEllipse(ellipse, brush);
+                                SharpDX.Direct2D1.BitmapInterpolationMode.NearestNeighbor,
+                                sourceRect.ToMpRect());
+                            //renderTarget.FillEllipse(ellipse, brush);
                             renderTarget.EndDraw();
 
                             swapChain.Present(1, SharpDX.DXGI.PresentFlags.None);
@@ -121,7 +141,9 @@ public class Direct2DSandbox
                         using var renderTarget = new SharpDX.Direct2D1.RenderTarget(factory, backBuffer, renderTargetProps);
 
                         var ellipse = new SharpDX.Direct2D1.Ellipse(
-                            new RawVector2(window.Width / 2f, window.Height / 2f), window.Width / 2f, window.Height / 2f);
+                            new RawVector2(window.Width / 2f, window.Height / 2f),
+                            window.Width / 2f,
+                            window.Height / 2f);
                         var sw = Stopwatch.StartNew();
                         while (!cancellation.IsCancellationRequested)
                         {
@@ -142,6 +164,104 @@ public class Direct2DSandbox
                     }
                 },
                 cancellation);
+    }
+
+    private static (Rect2F SourceRect, Rect2F DestRect) CalculateImageRects(
+        float boxX,
+        float boxY,
+        float boxWidth,
+        float boxHeight,
+        float mediaWidth,
+        float mediaHeight,
+        ScaleBehavior scaleBehavior)
+    {
+        switch (scaleBehavior)
+        {
+            case ScaleBehavior.None:
+            {
+                var imgX = mediaWidth > boxWidth ? (mediaWidth - boxWidth) / 2f : 0f;
+                var imgY = mediaHeight > boxHeight ? (mediaHeight - boxHeight) / 2f : 0f;
+                var imgW = mediaWidth > boxWidth ? boxWidth : mediaWidth;
+                var imgH = mediaHeight > boxHeight ? boxHeight : mediaHeight;
+                var sourceRect = new Rect2F(imgX, imgY, imgW, imgH);
+
+                var destX = mediaWidth > boxWidth ? boxX : boxX + (boxWidth - mediaWidth) / 2f;
+                var destY = mediaHeight > boxHeight ? boxY : boxY + (boxHeight - mediaHeight) / 2f;
+                var destW = mediaWidth > boxWidth ? boxWidth : mediaWidth;
+                var destH = mediaHeight > boxHeight ? boxHeight : mediaHeight;
+                var destRect = new Rect2F(destX, destY, destW, destH);
+                return (sourceRect, destRect);
+            }
+            case ScaleBehavior.Fit:
+            {
+                var sourceRect = new Rect2F(0f, 0f, mediaWidth, mediaHeight);
+
+                var scaleX = boxWidth / mediaWidth;
+                var scaleY = boxHeight / mediaHeight;
+                var scale = scaleX < scaleY ? scaleX : scaleY;
+                
+                var rectHeight = mediaHeight * scale;
+                var rectWidth = mediaWidth * scale;
+
+                var rectX = boxX + (boxWidth - rectWidth) / 2f;
+                var rectY = boxY + (boxHeight - rectHeight) / 2f;
+
+                var destRect = new Rect2F(rectX, rectY, rectWidth, rectHeight);
+                return (sourceRect, destRect);
+            }
+            default:
+                throw new ArgumentOutOfRangeException(nameof(scaleBehavior), scaleBehavior, null);
+        }
+    }
+
+    private static Rect2F CalculateSourceRect(float imgWidth, float imgHeight, ScaleBehavior scaleBehavior)
+    {
+        switch (scaleBehavior)
+        {
+            case ScaleBehavior.None:
+                return default;
+            case ScaleBehavior.Fit:
+                return new Rect2F(0f, 0f, imgWidth, imgHeight);
+            default:
+                throw new ArgumentOutOfRangeException(nameof(scaleBehavior), scaleBehavior, null);
+        }
+    }
+
+    private static Rect2F CalculateDestRect(
+        float boxX,
+        float boxY,
+        float boxWidth,
+        float boxHeight,
+        float imageWidth,
+        float imageHeight,
+        ScaleBehavior scaleBehavior)
+    {
+        switch (scaleBehavior)
+        {
+            case ScaleBehavior.None:
+                return default;
+            case ScaleBehavior.Fit:
+
+                var scaleX = boxWidth / imageWidth;
+                var scaleY = boxHeight / imageHeight;
+                var scale = scaleX < scaleY ? scaleX : scaleY;
+
+                var rectHeight = imageHeight * scale;
+                var rectWidth = imageWidth * scale;
+
+                var rectX = boxX + (boxWidth - rectWidth) / 2f;
+                var rectY = boxY + (boxHeight - rectHeight) / 2f;
+
+                return new(rectX, rectY, rectX + rectWidth, rectY + boxHeight);
+            default:
+                throw new ArgumentOutOfRangeException(nameof(scaleBehavior), scaleBehavior, null);
+        }
+    }
+
+    private enum ScaleBehavior
+    {
+        None,
+        Fit
     }
 
     #region Sandbox
@@ -240,4 +360,67 @@ public class Direct2DSandbox
 
     #endregion
 
+}
+
+public readonly record struct Rect2F(Point2F Origin, Size2F Size)
+{
+    public Rect2F(Size2F size)
+        : this(default, size)
+    {
+    }
+
+    public Rect2F(float x, float y, float width, float height)
+        : this(new Point2F(x, y), new Size2F(width, height))
+    {
+    }
+
+    public float Left => Origin.X;
+
+    public float Top => Origin.Y;
+
+    public float Right => Origin.X + Size.Width;
+
+    public float Bottom => Origin.Y + Size.Height;
+
+    public float Width => Size.Width;
+
+    public float Height => Size.Height;
+
+    public bool IsEmpty => Size.IsEmpty;
+
+    public static Rect2F FromLTRB(float left, float top, float right, float bottom) =>
+        new(left, top, right - left, bottom - top);
+}
+
+public readonly record struct Point2F(float X, float Y)
+{
+    public static Point2F operator +(Point2F left, (float X, float Y) right) => new(left.X + right.X, left.Y + right.Y);
+
+    public static Point2F operator -(Point2F left, (float X, float Y) right) => new(left.X - right.X, left.Y - right.Y);
+
+    //public static Point2F operator +(Point2F left, Vector2F right) => new(left.X + right.X, left.Y + right.Y);
+
+    //public static Point2F operator -(Point2F left, Vector2F right) => new(left.X - right.X, left.Y - right.Y);
+
+    //public static Vector2F operator -(Point2F left, Point2F right) => new(left.X - right.X, left.Y - right.Y);
+}
+
+public readonly record struct Size2F(float Width, float Height)
+{
+    public bool IsEmpty => Width == 0 || Height == 0;
+
+    public static implicit operator (float Width, float Height)(Size2F value) => (value.Width, value.Height);
+
+    public static Size2F operator *(Size2F left, float right) => new(left.Width * right, left.Height * right);
+
+    public static Size2F operator /(Size2F left, float right) => new(left.Width / right, left.Height / right);
+}
+
+public static class PrimitivesExtensions
+{
+//    public static Point2F ToMpPoint(this PointF point) => new(point.X, point.Y);
+
+    public static RawRectangleF ToMpRect(this Rect2F rect) => new(rect.Left, rect.Top, rect.Right, rect.Bottom);
+
+    //public static Color ToMpColor(this ColorF color) => Color.FromArgbNorm(color.A, color.R, color.G, color.B);
 }
