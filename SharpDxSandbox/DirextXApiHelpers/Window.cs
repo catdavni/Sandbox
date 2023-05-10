@@ -10,6 +10,8 @@ namespace SharpDxSandbox.DirextXApiHelpers
             Height = height;
         }
 
+        public event EventHandler<KeyPressedEventArgs> KeyPressed;
+
         public int Width { get; }
 
         public int Height { get; }
@@ -17,7 +19,11 @@ namespace SharpDxSandbox.DirextXApiHelpers
         public async Task RunInWindow(Func<Window, WindowHandle, CancellationToken, Task> drawing)
         {
             using var window = new PresenterWindowLoop(Width, Height, WindowOptions.TopMost);
-            window.KeyPressed += (_, eventArgs) => Console.WriteLine(eventArgs.Input);
+            window.KeyPressed += (s, eventArgs) =>
+            {
+                KeyPressed?.Invoke(s, eventArgs);
+                Console.WriteLine(eventArgs.Input);
+            };
 
             var windowHandle = window.GetWindowHandleAsync().Result;
 

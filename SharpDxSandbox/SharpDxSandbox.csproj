@@ -15,8 +15,11 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="Resources\test.shader">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <None Update="Resources\cube.hlsl">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Resources\test.hlsl">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
       <None Update="Resources\1i.jpg">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
