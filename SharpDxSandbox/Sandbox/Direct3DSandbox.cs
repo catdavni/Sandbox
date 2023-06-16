@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using SharpDX;
 using SharpDX.D3DCompiler;
 using SharpDX.Direct3D;
@@ -38,9 +37,10 @@ public static class Direct3DSandbox
 
             return Task.Run(() =>
                 {
+                    var initialZ = 4f;
                     var thetaX = 0f;
-                    var thetaY = 0f;
-                    var thetaZ = 4f;
+                    var thetaY = (float)Math.PI / 2; // 90deg
+                    var positionZ = initialZ + 0.5f;
 
                     window.KeyPressed += (s, e) =>
                     {
@@ -59,10 +59,10 @@ public static class Direct3DSandbox
                                 thetaY += 0.1f;
                                 break;
                             case 'r':
-                                thetaZ += 0.1f;
+                                positionZ += 0.1f;
                                 break;
                             case 'f':
-                                thetaZ -= 0.1f;
+                                positionZ -= 0.1f;
                                 break;
                         }
                         thetaX %= (float)(2f * Math.PI);
@@ -94,97 +94,15 @@ public static class Direct3DSandbox
                         using var backBuffer = swapChain.GetBackBuffer<Texture2D>(0);
                         using var renderTargetView = new RenderTargetView(device, backBuffer);
 
-                        var vertices = new RawVector3[]
-                        {
-                            new(-0.8f, -0.8f, 0.8f), // front bottom left
-                            new(-0.8f, 0.8f, 0.8f), // front top left
-                            new(0.8f, 0.8f, 0.8f), // front top right
-                            new(0.8f, -0.8f, 0.8f), // front bottom right
-
-                            new(-0.8f, -0.8f, -0.8f), // back bottom left
-                            new(-0.8f, 0.8f, -0.8f), // back top left
-                            new(0.8f, 0.8f, -0.8f), // back top right
-                            new(0.8f, -0.8f, -0.8f), // back bottom right
-                        };
-
-                        using var verticesDataStream = DataStream.Create(vertices, true, false);
-                        using var vertexBuffer = new Buffer(device, verticesDataStream, Marshal.SizeOf<RawVector3>() * vertices.Length, ResourceUsage.Default, BindFlags.VertexBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, Marshal.SizeOf<RawVector3>());
-                        device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBuffer, Marshal.SizeOf<RawVector3>(), 0));
-
-                        using var vertexShaderBytes = ShaderBytecode.CompileFromFile("Resources/cube.hlsl", "VShader", "vs_4_0");
-                        using var vertexShader = new VertexShader(device, vertexShaderBytes.Bytecode);
-                        device.ImmediateContext.VertexShader.Set(vertexShader);
-
-                        var inputLayoutPositionElement = new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0);
-                        using var inputLayout = new InputLayout(device, vertexShaderBytes.Bytecode, new[] { inputLayoutPositionElement });
-                        device.ImmediateContext.InputAssembler.InputLayout = inputLayout;
-
-                        var triangleIndices = new[]
-                        {
-                            7, 4, 5, 7, 5, 6, // front
-                            4, 0, 5, 0, 1, 5, // left
-                            7, 6, 3, 6, 2, 3, // right
-                            6, 5, 1, 6, 1, 2, // top
-                            0, 4, 7, 3, 0, 7, // bottom
-                            0, 2, 1, 0, 3, 2 // back
-                        };
-                        using var indexDataStream = DataStream.Create(triangleIndices, true, false);
-                        using var indexBuffer = new Buffer(device, indexDataStream, Marshal.SizeOf<int>() * triangleIndices.Length, ResourceUsage.Default, BindFlags.IndexBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, Marshal.SizeOf<int>());
-                        device.ImmediateContext.InputAssembler.SetIndexBuffer(indexBuffer, Format.R32_UInt, 0);
-
-                        using var pixelShaderBytes = ShaderBytecode.CompileFromFile("Resources/cube.hlsl", "PShader", "ps_4_0");
-                        using var pixelShader = new PixelShader(device, pixelShaderBytes.Bytecode);
-                        device.ImmediateContext.PixelShader.Set(pixelShader);
-
-                        var sideColors = new RawVector4[]
-                        {
-                            new(1, 0, 0, 1), // front
-                            new(0, 1, 0, 1), // left
-                            new(0, 0, 1, 1), // right
-                            new(1, 1, 0, 1), // top
-                            new(1, 0, 1, 1), // bottom
-                            new(0, 1, 1, 1) // back
-                        };
-                        using var pixelShaderConstantBufferDataStream = DataStream.Create(sideColors, true, false);
-                        using var pixelShaderConstantBuffer = new Buffer(
-                            device,
-                            pixelShaderConstantBufferDataStream,
-                            Marshal.SizeOf<RawVector4>() * sideColors.Length,
-                            ResourceUsage.Default,
-                            BindFlags.ConstantBuffer,
-                            CpuAccessFlags.None,
-                            ResourceOptionFlags.None,
-                            Marshal.SizeOf<RawVector4>());
-                        device.ImmediateContext.PixelShader.SetConstantBuffer(0, pixelShaderConstantBuffer);
-
-                        device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
                         device.ImmediateContext.Rasterizer.SetViewport(0, 0, window.Width, window.Height);
 
                         while (!cancellation.IsCancellationRequested)
                         {
-                            // MOVE
-                            Matrix transformationMatrix = Matrix.Identity;
-                            transformationMatrix *= Matrix.RotationX(thetaX);
-                            transformationMatrix *= Matrix.RotationY(thetaY);
-                            transformationMatrix *= Matrix.Translation(0, 0, thetaZ);
-                            transformationMatrix *= Matrix.PerspectiveLH(1, (float)window.Height / window.Width, 0.5f, 10);
-
-                            using var transformationDataStream = DataStream.Create(transformationMatrix.ToArray(), true, true);
-                            using var transformationBuffer = new Buffer(
-                                device,
-                                transformationDataStream,
-                                Marshal.SizeOf<Matrix>(),
-                                ResourceUsage.Dynamic,
-                                BindFlags.ConstantBuffer,
-                                CpuAccessFlags.Write,
-                                ResourceOptionFlags.None,
-                                Marshal.SizeOf<float>());
-                            device.ImmediateContext.VertexShader.SetConstantBuffer(0, transformationBuffer);
-
                             device.ImmediateContext.OutputMerger.SetRenderTargets(renderTargetView);
-
                             device.ImmediateContext.ClearRenderTargetView(renderTargetView, new RawColor4(0f, 0.5f, 0f, 1f));
-                            device.ImmediateContext.DrawIndexed(triangleIndices.Length, 0, 0);
+
+                            SetupCube(device, 0, 0, initialZ + (initialZ - positionZ), thetaX, thetaY);
+                            SetupCube(device, 0f, 0f, positionZ, -thetaX, -thetaY);
 
                             if (swapChain.Present(1, PresentFlags.None).Failure)
                             {
@@ -199,6 +117,100 @@ public static class Direct3DSandbox
                     }
                 },
                 cancellation);
+
+            void SetupCube(
+                Device device,
+                float positionX,
+                float positionY,
+                float positionZ,
+                float rotationX,
+                float rotationY)
+            {
+                var vertices = new RawVector3[]
+                {
+                    new(-0.8f, -0.8f, 0.8f), // front bottom left
+                    new(-0.8f, 0.8f, 0.8f), // front top left
+                    new(0.8f, 0.8f, 0.8f), // front top right
+                    new(0.8f, -0.8f, 0.8f), // front bottom right
+
+                    new(-0.8f, -0.8f, -0.8f), // back bottom left
+                    new(-0.8f, 0.8f, -0.8f), // back top left
+                    new(0.8f, 0.8f, -0.8f), // back top right
+                    new(0.8f, -0.8f, -0.8f), // back bottom right
+                };
+
+                using var verticesDataStream = DataStream.Create(vertices, true, false);
+                using var vertexBuffer = new Buffer(device, verticesDataStream, Marshal.SizeOf<RawVector3>() * vertices.Length, ResourceUsage.Default, BindFlags.VertexBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, Marshal.SizeOf<RawVector3>());
+                device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBuffer, Marshal.SizeOf<RawVector3>(), 0));
+
+                using var vertexShaderBytes = ShaderBytecode.CompileFromFile("Resources/cube.hlsl", "VShader", "vs_4_0");
+                using var vertexShader = new VertexShader(device, vertexShaderBytes.Bytecode);
+                device.ImmediateContext.VertexShader.Set(vertexShader);
+
+                var inputLayoutPositionElement = new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0);
+                using var inputLayout = new InputLayout(device, vertexShaderBytes.Bytecode, new[] { inputLayoutPositionElement });
+                device.ImmediateContext.InputAssembler.InputLayout = inputLayout;
+
+                var triangleIndices = new[]
+                {
+                    7, 4, 5, 7, 5, 6, // front
+                    4, 0, 5, 0, 1, 5, // left
+                    7, 6, 3, 6, 2, 3, // right
+                    6, 5, 1, 6, 1, 2, // top
+                    0, 4, 7, 3, 0, 7, // bottom
+                    0, 2, 1, 0, 3, 2 // back
+                };
+                using var indexDataStream = DataStream.Create(triangleIndices, true, false);
+                using var indexBuffer = new Buffer(device, indexDataStream, Marshal.SizeOf<int>() * triangleIndices.Length, ResourceUsage.Default, BindFlags.IndexBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, Marshal.SizeOf<int>());
+                device.ImmediateContext.InputAssembler.SetIndexBuffer(indexBuffer, Format.R32_UInt, 0);
+
+                using var pixelShaderBytes = ShaderBytecode.CompileFromFile("Resources/cube.hlsl", "PShader", "ps_4_0");
+                using var pixelShader = new PixelShader(device, pixelShaderBytes.Bytecode);
+                device.ImmediateContext.PixelShader.Set(pixelShader);
+
+                var sideColors = new RawVector4[]
+                {
+                    new(1, 0, 0, 1), // front
+                    new(0, 1, 0, 1), // left
+                    new(0, 0, 1, 1), // right
+                    new(1, 1, 0, 1), // top
+                    new(1, 0, 1, 1), // bottom
+                    new(0, 1, 1, 1) // back
+                };
+                using var pixelShaderConstantBufferDataStream = DataStream.Create(sideColors, true, false);
+                using var pixelShaderConstantBuffer = new Buffer(
+                    device,
+                    pixelShaderConstantBufferDataStream,
+                    Marshal.SizeOf<RawVector4>() * sideColors.Length,
+                    ResourceUsage.Default,
+                    BindFlags.ConstantBuffer,
+                    CpuAccessFlags.None,
+                    ResourceOptionFlags.None,
+                    Marshal.SizeOf<RawVector4>());
+                device.ImmediateContext.PixelShader.SetConstantBuffer(0, pixelShaderConstantBuffer);
+
+                device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
+
+                Matrix transformationMatrix = Matrix.Identity;
+                transformationMatrix *= Matrix.RotationX(rotationX);
+                transformationMatrix *= Matrix.RotationY(rotationY);
+                transformationMatrix *= Matrix.Translation(positionX, positionY, positionZ);
+                transformationMatrix *= Matrix.PerspectiveLH(1, (float)window.Height / window.Width, 0.5f, 10);
+
+                using var transformationDataStream = DataStream.Create(transformationMatrix.ToArray(), true, true);
+                using var transformationBuffer = new Buffer(
+                    device,
+                    transformationDataStream,
+                    Marshal.SizeOf<Matrix>(),
+                    ResourceUsage.Dynamic,
+                    BindFlags.ConstantBuffer,
+                    CpuAccessFlags.Write,
+                    ResourceOptionFlags.None,
+                    Marshal.SizeOf<float>());
+                device.ImmediateContext.VertexShader.SetConstantBuffer(0, transformationBuffer);
+
+                device.ImmediateContext.DrawIndexed(triangleIndices.Length, 0, 0);
+            }
         }
     }
 
