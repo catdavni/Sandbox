@@ -38,9 +38,9 @@ public static class Direct3DSandbox
             return Task.Run(() =>
                 {
                     var initialZ = 4f;
-                    var thetaX = 0f;
-                    var thetaY = (float)Math.PI / 2; // 90deg
-                    var positionZ = initialZ + 0.5f;
+                    var thetaX = (float)Math.PI / 4; 
+                    var thetaY = (float)Math.PI / 4; 
+                    var positionZ = initialZ + 0.2f;
 
                     window.KeyPressed += (s, e) =>
                     {
@@ -96,10 +96,35 @@ public static class Direct3DSandbox
 
                         device.ImmediateContext.Rasterizer.SetViewport(0, 0, window.Width, window.Height);
 
+                        using var depthStencilState = new DepthStencilState(device,
+                            new DepthStencilStateDescription
+                            {
+                                IsDepthEnabled = true,
+                                DepthWriteMask = DepthWriteMask.All,
+                                DepthComparison = Comparison.Less,
+                            });
+                        device.ImmediateContext.OutputMerger.SetDepthStencilState(depthStencilState);
+
+                        using var depthStencilTexture = new Texture2D(device,
+                            new Texture2DDescription
+                            {
+                                Width = window.Width,
+                                Height = window.Height,
+                                MipLevels = 1,
+                                ArraySize = 1,
+                                Format = Format.D32_Float,
+                                SampleDescription = swapChain.Description.SampleDescription,
+                                Usage = ResourceUsage.Default,
+                                BindFlags = BindFlags.DepthStencil
+                            });
+                        using var depthStencilView = new DepthStencilView(device, depthStencilTexture);
+
                         while (!cancellation.IsCancellationRequested)
                         {
-                            device.ImmediateContext.OutputMerger.SetRenderTargets(renderTargetView);
+                            //device.ImmediateContext.OutputMerger.SetRenderTargets(renderTargetView);
+                            device.ImmediateContext.OutputMerger.SetRenderTargets(depthStencilView, renderTargetView);
                             device.ImmediateContext.ClearRenderTargetView(renderTargetView, new RawColor4(0f, 0.5f, 0f, 1f));
+                            device.ImmediateContext.ClearDepthStencilView(depthStencilView, DepthStencilClearFlags.Depth, 1f, 0);
 
                             SetupCube(device, 0, 0, initialZ + (initialZ - positionZ), thetaX, thetaY);
                             SetupCube(device, 0f, 0f, positionZ, -thetaX, -thetaY);
