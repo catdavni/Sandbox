@@ -93,7 +93,7 @@ public static class Direct3DSandbox
 
                         using var backBuffer = swapChain.GetBackBuffer<Texture2D>(0);
                         using var renderTargetView = new RenderTargetView(device, backBuffer);
-                        
+
                         var vertices = new RawVector3[]
                         {
                             new(-0.8f, -0.8f, 0.8f), // front bottom left
@@ -119,30 +119,45 @@ public static class Direct3DSandbox
                         using var inputLayout = new InputLayout(device, vertexShaderBytes.Bytecode, new[] { inputLayoutPositionElement });
                         device.ImmediateContext.InputAssembler.InputLayout = inputLayout;
 
-                        var lineIndices = new[]
+                        var triangleIndices = new[]
                         {
-                            3, 0,
-                            0, 1,
-                            1, 2,
-                            2, 3,
-                            1, 5,
-                            5, 6,
-                            6, 2,
-                            3, 7,
-                            7, 6,
-                            7, 4,
-                            4, 0,
-                            5, 4
+                            7, 4, 5, 7, 5, 6, // front
+                            4, 0, 5, 0, 1, 5, // left
+                            7, 6, 3, 6, 2, 3, // right
+                            6, 5, 1, 6, 1, 2, // top
+                            0, 4, 7, 3, 0, 7, // bottom
+                            0, 2, 1, 0, 3, 2 // back
                         };
-                        using var indexDataStream = DataStream.Create(lineIndices, true, false);
-                        using var indexBuffer = new Buffer(device, indexDataStream, Marshal.SizeOf<int>() * lineIndices.Length, ResourceUsage.Default, BindFlags.IndexBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, Marshal.SizeOf<int>());
+                        using var indexDataStream = DataStream.Create(triangleIndices, true, false);
+                        using var indexBuffer = new Buffer(device, indexDataStream, Marshal.SizeOf<int>() * triangleIndices.Length, ResourceUsage.Default, BindFlags.IndexBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, Marshal.SizeOf<int>());
                         device.ImmediateContext.InputAssembler.SetIndexBuffer(indexBuffer, Format.R32_UInt, 0);
 
                         using var pixelShaderBytes = ShaderBytecode.CompileFromFile("Resources/cube.hlsl", "PShader", "ps_4_0");
                         using var pixelShader = new PixelShader(device, pixelShaderBytes.Bytecode);
                         device.ImmediateContext.PixelShader.Set(pixelShader);
 
-                        device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.LineList;
+                        var sideColors = new RawVector4[]
+                        {
+                            new(1, 0, 0, 1), // front
+                            new(0, 1, 0, 1), // left
+                            new(0, 0, 1, 1), // right
+                            new(1, 1, 0, 1), // top
+                            new(1, 0, 1, 1), // bottom
+                            new(0, 1, 1, 1) // back
+                        };
+                        using var pixelShaderConstantBufferDataStream = DataStream.Create(sideColors, true, false);
+                        using var pixelShaderConstantBuffer = new Buffer(
+                            device,
+                            pixelShaderConstantBufferDataStream,
+                            Marshal.SizeOf<RawVector4>() * sideColors.Length,
+                            ResourceUsage.Default,
+                            BindFlags.ConstantBuffer,
+                            CpuAccessFlags.None,
+                            ResourceOptionFlags.None,
+                            Marshal.SizeOf<RawVector4>());
+                        device.ImmediateContext.PixelShader.SetConstantBuffer(0, pixelShaderConstantBuffer);
+
+                        device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
                         device.ImmediateContext.Rasterizer.SetViewport(0, 0, window.Width, window.Height);
 
                         while (!cancellation.IsCancellationRequested)
@@ -168,8 +183,8 @@ public static class Direct3DSandbox
 
                             device.ImmediateContext.OutputMerger.SetRenderTargets(renderTargetView);
 
-                            device.ImmediateContext.ClearRenderTargetView(renderTargetView, new RawColor4(0f, 0.1f, 0f, 1f));
-                            device.ImmediateContext.DrawIndexed(lineIndices.Length, 0, 0);
+                            device.ImmediateContext.ClearRenderTargetView(renderTargetView, new RawColor4(0f, 0.5f, 0f, 1f));
+                            device.ImmediateContext.DrawIndexed(triangleIndices.Length, 0, 0);
 
                             if (swapChain.Present(1, PresentFlags.None).Failure)
                             {
