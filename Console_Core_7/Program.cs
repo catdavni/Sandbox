@@ -5,7 +5,7 @@ using SharpDxSandbox.Sandbox;
 
 //RunFactorial();
 
-//await Direct3DSandbox.StartTest();
+// await Direct3DSandbox.StartTest();
 await Direct3DSandbox.RotatingCube();
 //await Direct2DSandbox.DrawImage();
 

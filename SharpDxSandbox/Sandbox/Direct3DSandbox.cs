@@ -5,7 +5,10 @@ using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
+using SharpDxSandbox.Api.Implementation;
+using SharpDxSandbox.Api.Interface;
 using SharpDxSandbox.DirextXApiHelpers;
+using SharpDxSandbox.Utilities;
 using SharpDxSandbox.Window;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Device = SharpDX.Direct3D11.Device;
@@ -119,6 +122,33 @@ public static class Direct3DSandbox
                             });
                         using var depthStencilView = new DepthStencilView(device, depthStencilTexture);
 
+                        using var resourceFactory = new ResourceFactory();
+                        using var cubeA = new ColoredCube(device, resourceFactory);
+                        using var cubeB = new ColoredCube(device, resourceFactory);
+                        // using var cubeFactory = new CubeFactory(device, resourceFactory);
+                        // using var cubeA = cubeFactory.Create(CubeKind.Coloured);
+                        // using var cubeB = cubeFactory.Create(CubeKind.Coloured);
+                        
+                        cubeA.RegisterWorldTransform(() =>
+                        {
+                            Matrix transformationMatrix = Matrix.Identity;
+                            transformationMatrix *= Matrix.RotationX(thetaX);
+                            transformationMatrix *= Matrix.RotationY(thetaY);
+                            transformationMatrix *= Matrix.Translation(0, 0, initialZ + (initialZ - positionZ));
+                            transformationMatrix *= Matrix.PerspectiveLH(1, (float)window.Height / window.Width, 0.5f, 10);
+                            return transformationMatrix;
+                        });
+                        cubeB.RegisterWorldTransform(() =>
+                        {
+                            Matrix transformationMatrix = Matrix.Identity;
+                            transformationMatrix *= Matrix.RotationX(-thetaX);
+                            transformationMatrix *= Matrix.RotationY(-thetaY);
+                            transformationMatrix *= Matrix.Translation(0, 0, positionZ);
+                            transformationMatrix *= Matrix.PerspectiveLH(1, (float)window.Height / window.Width, 0.5f, 10);
+                            return transformationMatrix; 
+                        });
+
+                        DrawPipelineMetadata drawPipelineMetadata = default;
                         while (!cancellation.IsCancellationRequested)
                         {
                             //device.ImmediateContext.OutputMerger.SetRenderTargets(renderTargetView);
@@ -126,8 +156,11 @@ public static class Direct3DSandbox
                             device.ImmediateContext.ClearRenderTargetView(renderTargetView, new RawColor4(0f, 0.5f, 0f, 1f));
                             device.ImmediateContext.ClearDepthStencilView(depthStencilView, DepthStencilClearFlags.Depth, 1f, 0);
 
-                            SetupCube(device, 0, 0, initialZ + (initialZ - positionZ), thetaX, thetaY);
-                            SetupCube(device, 0f, 0f, positionZ, -thetaX, -thetaY);
+                            drawPipelineMetadata = cubeA.Draw(drawPipelineMetadata, device);
+                            drawPipelineMetadata = cubeB.Draw(drawPipelineMetadata, device);
+                            
+                            //SetupCube(device, 0, 0, initialZ + (initialZ - positionZ), thetaX, thetaY);
+                            //SetupCube(device, 0f, 0f, positionZ, -thetaX, -thetaY);
 
                             if (swapChain.Present(1, PresentFlags.None).Failure)
                             {
@@ -165,7 +198,15 @@ public static class Direct3DSandbox
                 };
 
                 using var verticesDataStream = DataStream.Create(vertices, true, false);
-                using var vertexBuffer = new Buffer(device, verticesDataStream, Marshal.SizeOf<RawVector3>() * vertices.Length, ResourceUsage.Default, BindFlags.VertexBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, Marshal.SizeOf<RawVector3>());
+                using var vertexBuffer = new Buffer(
+                    device, 
+                    verticesDataStream, 
+                    Marshal.SizeOf<RawVector3>() * vertices.Length, 
+                    ResourceUsage.Default,
+                    BindFlags.VertexBuffer,
+                    CpuAccessFlags.None,
+                    ResourceOptionFlags.None,
+                    Marshal.SizeOf<RawVector3>());
                 device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBuffer, Marshal.SizeOf<RawVector3>(), 0));
 
                 using var vertexShaderBytes = ShaderBytecode.CompileFromFile("Resources/cube.hlsl", "VShader", "vs_4_0");
