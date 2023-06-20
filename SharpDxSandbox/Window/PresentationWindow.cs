@@ -199,7 +199,6 @@ internal sealed class PresentationWindow : IDisposable
 
         private static User32.WndClass RegisterWindowClass(string className, User32.WndProc wndProcImpl)
         {
-            const int idcArrow = 32512;
             var wndClass = new User32.WndClass
             {
                 Style = (uint)(User32.WindowClassStyles.VRedraw | User32.WindowClassStyles.HRedraw),

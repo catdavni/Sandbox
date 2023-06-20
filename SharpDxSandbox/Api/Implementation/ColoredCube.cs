@@ -31,10 +31,6 @@ internal sealed class ColoredCube : CubeBase
             });
     }
 
-    public void Dispose()
-    {
-    }
-
     public override DrawPipelineMetadata Draw(DrawPipelineMetadata previous, Device device)
     {
         var currentMetadata = base.Draw(previous, device);

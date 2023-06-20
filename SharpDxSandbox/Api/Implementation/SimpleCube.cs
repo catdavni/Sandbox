@@ -48,11 +48,7 @@ public sealed class SimpleCube : CubeBase
             });
     }
 
-    public void Dispose()
-    {
-    }
-
-    public DrawPipelineMetadata Draw(DrawPipelineMetadata previous, Device device)
+    public override DrawPipelineMetadata Draw(DrawPipelineMetadata previous, Device device)
     {
         var currentMetadata = base.Draw(previous, device);
         

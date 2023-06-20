@@ -9,13 +9,7 @@ namespace SharpDxSandbox.Sandbox;
 
 public class Direct2DSandbox
 {
-    public static async Task DrawImage()
-    {
-        await FromDirect2D();
-        await FromDirect3D11();
-    }
-
-    private static async Task FromDirect2D()
+    internal static async Task FromDirect2D()
     {
         await new DirextXApiHelpers.Window(600, 600).RunInWindow(Drawing);
 
@@ -104,7 +98,7 @@ public class Direct2DSandbox
                 cancellation);
     }
 
-    private static async Task FromDirect3D11()
+    internal static async Task FromDirect3D11()
     {
         await new DirextXApiHelpers.Window(600, 400).RunInWindow(Drawing);
 
@@ -160,6 +154,7 @@ public class Direct2DSandbox
                     }
                     catch (Exception ex)
                     {
+                        Console.WriteLine(ex.Message);
                         logger.FlushMessages();
                     }
                 },

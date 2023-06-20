@@ -5,11 +5,17 @@ using GrEmit;
 
 namespace IlWeaving;
 
-public delegate BigInteger RunFactorial(BigInteger initial, BigInteger current, BigInteger accumulator);
-
-public static class TailRecursion
+public static class Factorial
 {
-    public static RunFactorial GenerateFactorial(bool useTailOptimization)
+    public static BigInteger RunGenerated(BigInteger n, bool useTailOptimization) => GenerateFactorial(useTailOptimization)(n, n, 1);
+
+    public static BigInteger RunCompiled(BigInteger n, BigInteger acc) => n != 0 && n != 1 ? RunCompiled(n - 1, acc * n) : acc;
+
+    
+    // MAGIC
+    private delegate BigInteger RunFactorial(BigInteger initial, BigInteger current, BigInteger accumulator);
+
+    private static RunFactorial GenerateFactorial(bool useTailOptimization)
     {
         var assemblyName = new AssemblyName("TailRecursionExperiment");
         var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.RunAndCollect);
@@ -20,7 +26,7 @@ public static class TailRecursion
         method.DefineParameter(1, ParameterAttributes.None, "initial"); // used for troubleshooting
         method.DefineParameter(1, ParameterAttributes.None, "current");
         method.DefineParameter(2, ParameterAttributes.None, "acc");
-        
+
         using (var il = new GroboIL(method))
         {
             var exit = il.DefineLabel("exit");
@@ -57,8 +63,4 @@ public static class TailRecursion
 
         return compiledMethod!.CreateDelegate<RunFactorial>();
     }
-
-    public static BigInteger RunGeneratedFactorial(BigInteger n, bool useTailOptimization) => GenerateFactorial(useTailOptimization)(n, n, 1);
-
-    public static BigInteger CompiledFactorial(BigInteger n, BigInteger acc) => n != 0 && n != 1 ? CompiledFactorial(n - 1, acc * n) : acc;
 }
