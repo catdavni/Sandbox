@@ -8,7 +8,6 @@ using SharpDX.Mathematics.Interop;
 using SharpDxSandbox.Api.Implementation;
 using SharpDxSandbox.Api.Interface;
 using SharpDxSandbox.DirextXApiHelpers;
-using SharpDxSandbox.Utilities;
 using SharpDxSandbox.Window;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Device = SharpDX.Direct3D11.Device;
@@ -123,11 +122,8 @@ public static class Direct3DSandbox
                         using var depthStencilView = new DepthStencilView(device, depthStencilTexture);
 
                         using var resourceFactory = new ResourceFactory();
-                        using var cubeA = new ColoredCube(device, resourceFactory);
+                        using var cubeA = new SimpleCube(device, resourceFactory);
                         using var cubeB = new ColoredCube(device, resourceFactory);
-                        // using var cubeFactory = new CubeFactory(device, resourceFactory);
-                        // using var cubeA = cubeFactory.Create(CubeKind.Coloured);
-                        // using var cubeB = cubeFactory.Create(CubeKind.Coloured);
                         
                         cubeA.RegisterWorldTransform(() =>
                         {
