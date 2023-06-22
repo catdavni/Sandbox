@@ -3,7 +3,7 @@ using System.Reflection.Emit;
 using System.Reflection;
 using GrEmit;
 
-namespace IlWeaving;
+namespace CodeGeneration;
 
 public static class Factorial
 {
@@ -11,7 +11,7 @@ public static class Factorial
 
     public static BigInteger RunCompiled(BigInteger n, BigInteger acc) => n != 0 && n != 1 ? RunCompiled(n - 1, acc * n) : acc;
 
-    
+
     // MAGIC
     private delegate BigInteger RunFactorial(BigInteger initial, BigInteger current, BigInteger accumulator);
 

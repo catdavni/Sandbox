@@ -1,4 +1,4 @@
-﻿namespace IlWeaving;
+﻿namespace CodeGeneration;
 
 public static class EntryPointIlWeaving
 {
