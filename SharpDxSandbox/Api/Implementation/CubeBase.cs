@@ -8,20 +8,27 @@ using SharpDxSandbox.Api.Interface;
 using SharpDxSandbox.Api.PrimitiveData;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Device = SharpDX.Direct3D11.Device;
+using MapFlags = SharpDX.Direct3D11.MapFlags;
 
 namespace SharpDxSandbox.Api.Implementation;
 
 public abstract class CubeBase : IDrawable
 {
+    private readonly IResourceFactory _resourceFactory;
     private readonly Buffer _vertexBuffer;
     private readonly VertexShader _vertexShader;
     private readonly InputLayout _inputLayout;
     private readonly PixelShader _pixelShader;
     private readonly Buffer _pixelShaderConstantBuffer;
+
+    private Buffer _vertexShaderConstantBuffer;
     private Func<Matrix> _worldTransform;
+
+    private const string CubeTransformMatrixKey = "CubeTransformMatrix";
 
     protected CubeBase(Device device, IResourceFactory resourceFactory)
     {
+        _resourceFactory = resourceFactory;
         _vertexBuffer = resourceFactory.EnsureCrated(Cube.VertexBufferKey,
             () =>
             {
@@ -43,11 +50,12 @@ public abstract class CubeBase : IDrawable
         var inputLayoutPositionElement = new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0);
         _inputLayout = resourceFactory.EnsureCrated(Cube.InputLayout, () => new InputLayout(device, vertexShaderBytes.Bytecode, new[] { inputLayoutPositionElement }));
 
-        _pixelShader = resourceFactory.EnsureCrated(Cube.PixelShaderKey, () =>
-        {
-            using var psByteCode = ShaderBytecode.CompileFromFile("Resources/cube.hlsl", "PShader", "ps_4_0");
-            return new PixelShader(device, psByteCode.Bytecode);
-        });
+        _pixelShader = resourceFactory.EnsureCrated(Cube.PixelShaderKey,
+            () =>
+            {
+                using var psByteCode = ShaderBytecode.CompileFromFile("Resources/cube.hlsl", "PShader", "ps_4_0");
+                return new PixelShader(device, psByteCode.Bytecode);
+            });
 
         _pixelShaderConstantBuffer = resourceFactory.EnsureCrated(Cube.PixelShaderConstantBufferKey,
             () =>
@@ -102,17 +110,32 @@ public abstract class CubeBase : IDrawable
         }
 
         var worldTransform = _worldTransform();
-        using var vsCbDataStream = DataStream.Create(worldTransform.ToArray(), true, true);
-        using var transformationBuffer = new Buffer(
-            device,
-            vsCbDataStream,
-            Marshal.SizeOf<Matrix>(),
-            ResourceUsage.Dynamic,
-            BindFlags.ConstantBuffer,
-            CpuAccessFlags.Write,
-            ResourceOptionFlags.None,
-            Marshal.SizeOf<float>());
-        device.ImmediateContext.VertexShader.SetConstantBuffer(0, transformationBuffer);
+        if (_vertexShaderConstantBuffer == null)
+        {
+            _vertexShaderConstantBuffer = _resourceFactory.EnsureCrated(CubeTransformMatrixKey, () =>
+            {
+                using var vsCbDataStream = DataStream.Create(worldTransform.ToArray(), true, true);
+                return new Buffer(
+                    device,
+                    vsCbDataStream,
+                    Marshal.SizeOf<Matrix>(),
+                    ResourceUsage.Dynamic,
+                    BindFlags.ConstantBuffer,
+                    CpuAccessFlags.Write,
+                    ResourceOptionFlags.None,
+                    Marshal.SizeOf<float>());
+            });
+        }
+        else
+        {
+            device.ImmediateContext.MapSubresource(_vertexShaderConstantBuffer, MapMode.WriteDiscard, MapFlags.None, out var dataStream);
+            dataStream.Write(worldTransform);
+            //dataStream.Flush();
+            device.ImmediateContext.UnmapSubresource(_vertexShaderConstantBuffer, 0);
+            dataStream.Dispose();
+        }
+
+        device.ImmediateContext.VertexShader.SetConstantBuffer(0, _vertexShaderConstantBuffer);
 
         return currentMetadata;
     }
