@@ -1,6 +1,9 @@
-﻿namespace CodeGeneration;
+﻿using CodeGeneration.IL;
+using CodeGeneration.Roslyn;
 
-public static class EntryPointIlWeaving
+namespace CodeGeneration;
+
+public static class EntryPointCodeGen
 {
     public static void CompareFactorial()
     {
@@ -17,5 +20,18 @@ public static class EntryPointIlWeaving
         Console.WriteLine($"{nameof(Factorial.RunCompiled)} is started!");
         Factorial.RunCompiled(bigValue, 1);
         Console.WriteLine($"{nameof(Factorial.RunCompiled)} is finished!");
-    } 
+    }
+
+    public static void RunRoslyn()
+    {
+        var assemblyName = "RazorTemplateAsm";
+        var classNames = new[] { "vrum", "piu", "puf" };
+        RoslynSandbox.GenerateWithRazor(assemblyName, classNames);
+        RoslynSandbox.Run(assemblyName, classNames);
+        
+        assemblyName = "StringTemplateAsm";
+        classNames = new[] { "templateVrum", "templatePiu", "templatePuf" };
+        RoslynSandbox.GenerateWithStringTemplate(assemblyName, classNames);
+        RoslynSandbox.Run(assemblyName, classNames);
+    }
 }

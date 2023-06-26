@@ -1,9 +1,9 @@
 ﻿using System.Numerics;
-using System.Reflection.Emit;
 using System.Reflection;
+using System.Reflection.Emit;
 using GrEmit;
 
-namespace CodeGeneration;
+namespace CodeGeneration.IL;
 
 public static class Factorial
 {

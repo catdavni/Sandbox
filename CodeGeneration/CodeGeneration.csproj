@@ -9,6 +9,14 @@
   <ItemGroup>
     <PackageReference Include="GrEmit" Version="3.4.10" />
     <PackageReference Include="Lokad.ILPack" Version="0.2.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="4.6.0" />
+    <PackageReference Include="RazorLight" Version="2.3.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="RoslynGen\Templates\SimpleClassTemplate.cshtml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
