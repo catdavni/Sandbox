@@ -121,28 +121,28 @@ public static class Direct3DSandbox
                             });
                         using var depthStencilView = new DepthStencilView(device, depthStencilTexture);
 
-                        using var resourceFactory = new ResourceFactory();
-                        using var cubeA = new SimpleCube(device, resourceFactory);
-                        using var cubeB = new ColoredCube(device, resourceFactory);
-                        
-                        cubeA.RegisterWorldTransform(() =>
-                        {
-                            Matrix transformationMatrix = Matrix.Identity;
-                            transformationMatrix *= Matrix.RotationX(thetaX);
-                            transformationMatrix *= Matrix.RotationY(thetaY);
-                            transformationMatrix *= Matrix.Translation(0, 0, initialZ + (initialZ - positionZ));
-                            transformationMatrix *= Matrix.PerspectiveLH(1, (float)window.Height / window.Width, 0.5f, 10);
-                            return transformationMatrix;
-                        });
-                        cubeB.RegisterWorldTransform(() =>
-                        {
-                            Matrix transformationMatrix = Matrix.Identity;
-                            transformationMatrix *= Matrix.RotationX(-thetaX);
-                            transformationMatrix *= Matrix.RotationY(-thetaY);
-                            transformationMatrix *= Matrix.Translation(0, 0, positionZ);
-                            transformationMatrix *= Matrix.PerspectiveLH(1, (float)window.Height / window.Width, 0.5f, 10);
-                            return transformationMatrix; 
-                        });
+                        // using var resourceFactory = new ResourceFactory();
+                        //  var cubeA = new SimpleCube(device, resourceFactory);
+                        //  var cubeB = new ColoredCube(device, resourceFactory);
+                        //
+                        // cubeA.RegisterWorldTransform(() =>
+                        // {
+                        //     Matrix transformationMatrix = Matrix.Identity;
+                        //     transformationMatrix *= Matrix.RotationX(thetaX);
+                        //     transformationMatrix *= Matrix.RotationY(thetaY);
+                        //     transformationMatrix *= Matrix.Translation(0, 0, initialZ + (initialZ - positionZ));
+                        //     transformationMatrix *= Matrix.PerspectiveLH(1, (float)window.Height / window.Width, 0.5f, 10);
+                        //     return transformationMatrix;
+                        // });
+                        // cubeB.RegisterWorldTransform(() =>
+                        // {
+                        //     Matrix transformationMatrix = Matrix.Identity;
+                        //     transformationMatrix *= Matrix.RotationX(-thetaX);
+                        //     transformationMatrix *= Matrix.RotationY(-thetaY);
+                        //     transformationMatrix *= Matrix.Translation(0, 0, positionZ);
+                        //     transformationMatrix *= Matrix.PerspectiveLH(1, (float)window.Height / window.Width, 0.5f, 10);
+                        //     return transformationMatrix; 
+                        // });
 
                         DrawPipelineMetadata drawPipelineMetadata = default;
                         while (!cancellation.IsCancellationRequested)
@@ -152,11 +152,11 @@ public static class Direct3DSandbox
                             device.ImmediateContext.ClearRenderTargetView(renderTargetView, new RawColor4(0f, 0.5f, 0f, 1f));
                             device.ImmediateContext.ClearDepthStencilView(depthStencilView, DepthStencilClearFlags.Depth, 1f, 0);
 
-                            drawPipelineMetadata = cubeA.Draw(drawPipelineMetadata, device);
-                            drawPipelineMetadata = cubeB.Draw(drawPipelineMetadata, device);
+                            // drawPipelineMetadata = cubeA.Draw(drawPipelineMetadata, device);
+                            // drawPipelineMetadata = cubeB.Draw(drawPipelineMetadata, device);
                             
-                            //SetupCube(device, 0, 0, initialZ + (initialZ - positionZ), thetaX, thetaY);
-                            //SetupCube(device, 0f, 0f, positionZ, -thetaX, -thetaY);
+                            SetupCube(device, 0, 0, initialZ + (initialZ - positionZ), thetaX, thetaY);
+                            SetupCube(device, 0f, 0f, positionZ, -thetaX, -thetaY);
 
                             if (swapChain.Present(1, PresentFlags.None).Failure)
                             {

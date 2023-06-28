@@ -29,6 +29,7 @@ internal sealed class DeviceLogger: IDisposable
 
     public void Dispose()
     {
+        FlushMessages();
         _infoQueue.Dispose();
     }
 }

@@ -4,7 +4,7 @@ using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using SharpDxSandbox.Api.Interface;
-using SharpDxSandbox.Api.PrimitiveData;
+using SharpDxSandbox.Api.Models;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Device = SharpDX.Direct3D11.Device;
 

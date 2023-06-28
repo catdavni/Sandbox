@@ -1,6 +1,6 @@
 ﻿using SharpDX.Mathematics.Interop;
 
-namespace SharpDxSandbox.Api.PrimitiveData;
+namespace SharpDxSandbox.Api.Models;
 
 public static class Cube
 {

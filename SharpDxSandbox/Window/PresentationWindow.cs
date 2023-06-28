@@ -37,7 +37,7 @@ internal sealed class PresentationWindow : IDisposable
             }
             else
             {
-                style |= NativeMethods.WsMaximize;
+                //style |= NativeMethods.WsMaximize;
             }
 
             _handle = User32.CreateWindowEx(
@@ -101,7 +101,7 @@ internal sealed class PresentationWindow : IDisposable
 
     private void Dispose(bool isDisposing)
     {
-        //ExceptionHelpers.HandleExceptions(() => User32.DestroyWindow(_handle), _log.Error);
+        User32.TryDestroyWindow(_handle);
 
         if (isDisposing)
         {
@@ -153,6 +153,11 @@ internal sealed class PresentationWindow : IDisposable
         [SuppressMessage("Microsoft.Usage", "CA1806:DoNotIgnoreMethodResults", Justification = "ShowCursor returns not HRESULT, but the display counter")]
         private static nint WindowProcedure(nint hwnd, uint msg, nint wordParam, nint longParam)
         {
+            // if (_windowLookup.ContainsKey(hwnd))
+            // {
+            //     Console.WriteLine($"0x{msg:X}");
+            // }
+            
             switch (msg)
             {
                 case NativeMethods.WmCreate:
@@ -180,7 +185,6 @@ internal sealed class PresentationWindow : IDisposable
                     {
                         pw.HandleKeyPress(checked((int)wordParam));
                     }
-
                     break;
                 }
 

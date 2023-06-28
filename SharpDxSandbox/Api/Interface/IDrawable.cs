@@ -3,7 +3,7 @@ using SharpDX.Direct3D11;
 
 namespace SharpDxSandbox.Api.Interface;
 
-public interface IDrawable : IDisposable
+public interface IDrawable
 {
     void RegisterWorldTransform(Func<Matrix> transform);
 

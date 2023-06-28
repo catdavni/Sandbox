@@ -6,8 +6,10 @@ public static class EntryPointSharpDx
 {
     public static async Task RunDirect3D()
     {
+        await new GraphicsSandbox().Start();
+
         //await Direct3DSandbox.StartTest();
-        await Direct3DSandbox.RotatingCube();
+        //await Direct3DSandbox.RotatingCube();
     }
 
     public static async Task RunDirect2D()

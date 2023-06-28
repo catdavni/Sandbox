@@ -5,7 +5,7 @@ using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
 using SharpDxSandbox.Api.Interface;
-using SharpDxSandbox.Api.PrimitiveData;
+using SharpDxSandbox.Api.Models;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Device = SharpDX.Direct3D11.Device;
 using MapFlags = SharpDX.Direct3D11.MapFlags;
@@ -138,9 +138,5 @@ public abstract class CubeBase : IDrawable
         device.ImmediateContext.VertexShader.SetConstantBuffer(0, _vertexShaderConstantBuffer);
 
         return currentMetadata;
-    }
-
-    public void Dispose()
-    {
     }
 }
