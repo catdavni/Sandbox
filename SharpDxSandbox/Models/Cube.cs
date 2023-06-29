@@ -1,6 +1,6 @@
 ﻿using SharpDX.Mathematics.Interop;
 
-namespace SharpDxSandbox.Api.Models;
+namespace SharpDxSandbox.Models;
 
 public static class Cube
 {
@@ -13,15 +13,15 @@ public static class Cube
     
     public static readonly RawVector3[] Vertices =
     {
-        new(-0.8f, -0.8f, 0.8f), // front bottom left
-        new(-0.8f, 0.8f, 0.8f), // front top left
-        new(0.8f, 0.8f, 0.8f), // front top right
-        new(0.8f, -0.8f, 0.8f), // front bottom right
+        new(-1f, -1f, 1f), // front bottom left
+        new(-1f, 1f, 1f), // front top left
+        new(1f, 1f, 1f), // front top right
+        new(1f, -1f, 1f), // front bottom right
 
-        new(-0.8f, -0.8f, -0.8f), // back bottom left
-        new(-0.8f, 0.8f, -0.8f), // back top left
-        new(0.8f, 0.8f, -0.8f), // back top right
-        new(0.8f, -0.8f, -0.8f), // back bottom right
+        new(-1f, -1f, -1f), // back bottom left
+        new(-1f, 1f, -1f), // back top left
+        new(1f, 1f, -1f), // back top right
+        new(1f, -1f, -1f), // back bottom right
     };
 
     public static readonly int[] TriangleIndices =

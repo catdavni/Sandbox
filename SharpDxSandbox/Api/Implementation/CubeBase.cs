@@ -5,7 +5,7 @@ using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
 using SharpDxSandbox.Api.Interface;
-using SharpDxSandbox.Api.Models;
+using SharpDxSandbox.Models;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Device = SharpDX.Direct3D11.Device;
 using MapFlags = SharpDX.Direct3D11.MapFlags;
@@ -26,17 +26,17 @@ public abstract class CubeBase : IDrawable
 
     private const string CubeTransformMatrixKey = "CubeTransformMatrix";
 
-    protected CubeBase(Device device, IResourceFactory resourceFactory)
+    protected CubeBase(Device device, IResourceFactory resourceFactory, (string Key, RawVector3[] Data) vertices, RawVector4[] sideColors)
     {
         _resourceFactory = resourceFactory;
-        _vertexBuffer = resourceFactory.EnsureCrated(Cube.VertexBufferKey,
+        _vertexBuffer = resourceFactory.EnsureCrated(vertices.Key,
             () =>
             {
-                using var verticesByteCode = DataStream.Create(Cube.Vertices, true, false);
+                using var verticesByteCode = DataStream.Create(vertices.Data, true, false);
                 return new Buffer(
                     device,
                     verticesByteCode,
-                    Marshal.SizeOf<RawVector3>() * Cube.Vertices.Length,
+                    Marshal.SizeOf<RawVector3>() * vertices.Data.Length,
                     ResourceUsage.Default,
                     BindFlags.VertexBuffer,
                     CpuAccessFlags.None,
@@ -60,11 +60,11 @@ public abstract class CubeBase : IDrawable
         _pixelShaderConstantBuffer = resourceFactory.EnsureCrated(Cube.PixelShaderConstantBufferKey,
             () =>
             {
-                using var dataStream = DataStream.Create(Cube.SideColors, true, false);
+                using var dataStream = DataStream.Create(sideColors, true, false);
                 return new Buffer(
                     device,
                     dataStream,
-                    Marshal.SizeOf<RawVector4>() * Cube.SideColors.Length,
+                    Marshal.SizeOf<RawVector4>() * sideColors.Length,
                     ResourceUsage.Default,
                     BindFlags.ConstantBuffer,
                     CpuAccessFlags.None,
@@ -112,19 +112,20 @@ public abstract class CubeBase : IDrawable
         var worldTransform = _worldTransform();
         if (_vertexShaderConstantBuffer == null)
         {
-            _vertexShaderConstantBuffer = _resourceFactory.EnsureCrated(CubeTransformMatrixKey, () =>
-            {
-                using var vsCbDataStream = DataStream.Create(worldTransform.ToArray(), true, true);
-                return new Buffer(
-                    device,
-                    vsCbDataStream,
-                    Marshal.SizeOf<Matrix>(),
-                    ResourceUsage.Dynamic,
-                    BindFlags.ConstantBuffer,
-                    CpuAccessFlags.Write,
-                    ResourceOptionFlags.None,
-                    Marshal.SizeOf<float>());
-            });
+            _vertexShaderConstantBuffer = _resourceFactory.EnsureCrated(CubeTransformMatrixKey,
+                () =>
+                {
+                    using var vsCbDataStream = DataStream.Create(worldTransform.ToArray(), true, true);
+                    return new Buffer(
+                        device,
+                        vsCbDataStream,
+                        Marshal.SizeOf<Matrix>(),
+                        ResourceUsage.Dynamic,
+                        BindFlags.ConstantBuffer,
+                        CpuAccessFlags.Write,
+                        ResourceOptionFlags.None,
+                        Marshal.SizeOf<float>());
+                });
         }
         else
         {

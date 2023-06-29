@@ -3,6 +3,7 @@ using SharpDX;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
+using SharpDX.Mathematics.Interop;
 using SharpDxSandbox.Api.Interface;
 using SharpDxSandbox.Models;
 using Buffer = SharpDX.Direct3D11.Buffer;
@@ -10,21 +11,23 @@ using Device = SharpDX.Direct3D11.Device;
 
 namespace SharpDxSandbox.Api.Implementation;
 
-internal sealed class ColoredCube : CubeBase
+internal sealed class FromModel : CubeBase
 {
+    private readonly int[] _indices;
     private readonly Buffer _indexBuffer;
 
-    public ColoredCube(Device device, IResourceFactory resourceFactory) 
-        : base(device, resourceFactory, (Cube.VertexBufferKey, Cube.Vertices), Cube.SideColors)
+    public FromModel(Device device, IResourceFactory resourceFactory, RawVector3[] vertices, int[] indices, string key)
+        : base(device, resourceFactory, ($"{key}Vertices", vertices), Cube.SideColors)
     {
-        _indexBuffer = resourceFactory.EnsureCrated(Cube.TriangleIndexBufferKey,
+        _indices = indices;
+        _indexBuffer = resourceFactory.EnsureCrated($"{key}Indices",
             () =>
             {
-                using var indexDataStream = DataStream.Create(Cube.TriangleIndices, true, false);
+                using var indexDataStream = DataStream.Create(indices, true, false);
                 return new Buffer(
                     device,
                     indexDataStream,
-                    Marshal.SizeOf<int>() * Cube.TriangleIndices.Length,
+                    Marshal.SizeOf<int>() * indices.Length,
                     ResourceUsage.Default,
                     BindFlags.IndexBuffer,
                     CpuAccessFlags.None,
@@ -45,7 +48,7 @@ internal sealed class ColoredCube : CubeBase
 
         device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
 
-        device.ImmediateContext.DrawIndexed(Cube.TriangleIndices.Length, 0, 0);
+        device.ImmediateContext.DrawIndexed(_indices.Length, 0, 0);
 
         return currentMetadata;
     }
