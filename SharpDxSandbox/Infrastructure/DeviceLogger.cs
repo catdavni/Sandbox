@@ -1,8 +1,9 @@
-﻿using SharpDX.Direct3D11;
+﻿using System.Diagnostics;
+using SharpDX.Direct3D11;
 using Device = SharpDX.Direct3D11.Device;
 using InfoQueue = SharpDX.Direct3D11.InfoQueue;
 
-namespace SharpDxSandbox.DirextXApiHelpers;
+namespace SharpDxSandbox.Infrastructure;
 
 internal sealed class DeviceLogger: IDisposable
 {
@@ -16,11 +17,12 @@ internal sealed class DeviceLogger: IDisposable
         _infoQueue.SetBreakOnSeverity(MessageSeverity.Corruption, true);
     }
 
-    public void FlushMessages()
+    public void  FlushMessages()
     {
         for (var i = 0; i < _infoQueue.NumStoredMessages; i++)
         {
             var message = _infoQueue.GetMessage(i);
+            Trace.WriteLine($"Trace {message.Severity}: {message.Description}");
             Console.WriteLine($"{message.Severity}: {message.Description}");
         }
         _infoQueue.ClearStoredMessages();

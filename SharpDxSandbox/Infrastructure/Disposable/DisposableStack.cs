@@ -1,4 +1,4 @@
-﻿namespace SharpDxSandbox.Utilities;
+﻿namespace SharpDxSandbox.Infrastructure.Disposable;
 
 public sealed class DisposableStack : IDisposable
 {

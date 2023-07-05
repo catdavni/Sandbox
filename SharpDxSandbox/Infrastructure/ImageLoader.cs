@@ -1,6 +1,6 @@
 ﻿using SharpDX.IO;
 
-namespace SharpDxSandbox.WicHelpers;
+namespace SharpDxSandbox.Infrastructure;
 
 internal static class ImageLoader
 {

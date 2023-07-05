@@ -3,12 +3,12 @@ using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
-using SharpDxSandbox.Api.Interface;
-using SharpDxSandbox.DirextXApiHelpers;
-using SharpDxSandbox.Utilities;
+using SharpDxSandbox.Graphics.Drawables;
+using SharpDxSandbox.Infrastructure;
+using SharpDxSandbox.Infrastructure.Disposable;
 using SharpDxSandbox.Window;
 
-namespace SharpDxSandbox.Api.Implementation;
+namespace SharpDxSandbox.Graphics;
 
 internal sealed class Graphics : IDisposable
 {
@@ -18,10 +18,9 @@ internal sealed class Graphics : IDisposable
     // cleaned up with disposable stack
     private readonly DepthStencilView _depthStencilView;
     private readonly RenderTargetView _renderTargetView;
-    private readonly DeviceLogger _logger;
     private readonly SwapChain _swapChain;
 
-    public Graphics(DirextXApiHelpers.Window window, WindowHandle windowHandle)
+    public Graphics(Infrastructure.Window window, WindowHandle windowHandle)
     {
         _drawables = new();
         _disposable = new DisposableStack();
@@ -29,7 +28,7 @@ internal sealed class Graphics : IDisposable
         try
         {
             Device = new SharpDX.Direct3D11.Device(DriverType.Hardware, DeviceCreationFlags.Debug).DisposeWith(_disposable);
-            _logger = new DeviceLogger(Device).DisposeWith(_disposable);
+            Logger = new DeviceLogger(Device).DisposeWith(_disposable);
 
             var dxgiDevice = Device.QueryInterface<SharpDX.DXGI.Device>().DisposeWith(_disposable);
             var adapter = dxgiDevice.Adapter.DisposeWith(_disposable);
@@ -89,6 +88,8 @@ internal sealed class Graphics : IDisposable
         }
     }
 
+    public DeviceLogger Logger { get; }
+
     public SharpDX.Direct3D11.Device Device { get; }
 
     public void AddDrawable(IDrawable drawable) => _drawables.Enqueue(drawable);
@@ -111,7 +112,7 @@ internal sealed class Graphics : IDisposable
 
                     if (_swapChain.Present(1, PresentFlags.None).Failure)
                     {
-                        _logger.FlushMessages();
+                        Logger.FlushMessages();
                     }
                 }
             },

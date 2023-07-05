@@ -1,6 +1,6 @@
 ﻿using SharpDxSandbox.Window;
 
-namespace SharpDxSandbox.DirextXApiHelpers
+namespace SharpDxSandbox.Infrastructure
 {
     internal sealed class Window
     {

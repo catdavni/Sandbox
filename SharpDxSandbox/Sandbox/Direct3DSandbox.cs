@@ -5,9 +5,9 @@ using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
-using SharpDxSandbox.Api.Implementation;
-using SharpDxSandbox.Api.Interface;
-using SharpDxSandbox.DirextXApiHelpers;
+using SharpDxSandbox.Graphics;
+using SharpDxSandbox.Graphics.Drawables;
+using SharpDxSandbox.Infrastructure;
 using SharpDxSandbox.Window;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Device = SharpDX.Direct3D11.Device;
@@ -18,9 +18,9 @@ public static class Direct3DSandbox
 {
     public static async Task RotatingCube()
     {
-        await new DirextXApiHelpers.Window(1024, 768).RunInWindow(Drawing);
+        await new Infrastructure.Window(1024, 768).RunInWindow(Drawing);
 
-        Task Drawing(DirextXApiHelpers.Window window, WindowHandle windowHandle, CancellationToken cancellation)
+        Task Drawing(Infrastructure.Window window, WindowHandle windowHandle, CancellationToken cancellation)
         {
             // create device and swapchain
             // create vertex type
@@ -205,7 +205,7 @@ public static class Direct3DSandbox
                     Marshal.SizeOf<RawVector3>());
                 device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBuffer, Marshal.SizeOf<RawVector3>(), 0));
 
-                using var vertexShaderBytes = ShaderBytecode.CompileFromFile("Resources/cube.hlsl", "VShader", "vs_4_0");
+                using var vertexShaderBytes = ShaderBytecode.CompileFromFile("Resources/Shaders/cube.hlsl", "VShader", "vs_4_0");
                 using var vertexShader = new VertexShader(device, vertexShaderBytes.Bytecode);
                 device.ImmediateContext.VertexShader.Set(vertexShader);
 
@@ -226,7 +226,7 @@ public static class Direct3DSandbox
                 using var indexBuffer = new Buffer(device, indexDataStream, Marshal.SizeOf<int>() * triangleIndices.Length, ResourceUsage.Default, BindFlags.IndexBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, Marshal.SizeOf<int>());
                 device.ImmediateContext.InputAssembler.SetIndexBuffer(indexBuffer, Format.R32_UInt, 0);
 
-                using var pixelShaderBytes = ShaderBytecode.CompileFromFile("Resources/cube.hlsl", "PShader", "ps_4_0");
+                using var pixelShaderBytes = ShaderBytecode.CompileFromFile("Resources/Shaders/cube.hlsl", "PShader", "ps_4_0");
                 using var pixelShader = new PixelShader(device, pixelShaderBytes.Bytecode);
                 device.ImmediateContext.PixelShader.Set(pixelShader);
 
@@ -278,9 +278,9 @@ public static class Direct3DSandbox
 
     public static async Task StartTest()
     {
-        await new DirextXApiHelpers.Window(600, 400).RunInWindow(Drawing);
+        await new Infrastructure.Window(600, 400).RunInWindow(Drawing);
 
-        Task Drawing(DirextXApiHelpers.Window window, WindowHandle windowHandle, CancellationToken cancellation)
+        Task Drawing(Infrastructure.Window window, WindowHandle windowHandle, CancellationToken cancellation)
         {
             return Task.Run(() =>
                 {
@@ -351,9 +351,9 @@ public static class Direct3DSandbox
 
                         // creating shaders
                         using var vertexShaderByteCode =
-                            ShaderBytecode.CompileFromFile("Resources/test.hlsl", "VShader", "vs_4_0");
+                            ShaderBytecode.CompileFromFile("Resources/Shaders/test.hlsl", "VShader", "vs_4_0");
                         using var pixelShaderByteCode =
-                            ShaderBytecode.CompileFromFile("Resources/test.hlsl", "PShader", "ps_4_0");
+                            ShaderBytecode.CompileFromFile("Resources/Shaders/test.hlsl", "PShader", "ps_4_0");
                         using var vertexShader = new VertexShader(device, vertexShaderByteCode);
                         using var pixelShader = new PixelShader(device, pixelShaderByteCode);
                         device.ImmediateContext.VertexShader.Set(vertexShader);

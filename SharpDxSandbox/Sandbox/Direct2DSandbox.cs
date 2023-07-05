@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using SharpDX.Mathematics.Interop;
-using SharpDxSandbox.DirextXApiHelpers;
-using SharpDxSandbox.WicHelpers;
+using SharpDxSandbox.Infrastructure;
 using SharpDxSandbox.Window;
 using AlphaMode = SharpDX.Direct2D1.AlphaMode;
 
@@ -11,9 +10,9 @@ public class Direct2DSandbox
 {
     internal static async Task FromDirect2D()
     {
-        await new DirextXApiHelpers.Window(600, 600).RunInWindow(Drawing);
+        await new Infrastructure.Window(600, 600).RunInWindow(Drawing);
 
-        Task Drawing(DirextXApiHelpers.Window window, WindowHandle windowHandle, CancellationToken cancellation)
+        Task Drawing(Infrastructure.Window window, WindowHandle windowHandle, CancellationToken cancellation)
             => Task.Run(() =>
                 {
                     using var d3d11device = new SharpDX.Direct3D11.Device(
@@ -49,7 +48,7 @@ public class Direct2DSandbox
                             new SharpDX.Direct2D1.RenderTargetProperties(
                                 new SharpDX.Direct2D1.PixelFormat(SharpDX.DXGI.Format.Unknown, AlphaMode.Premultiplied)));
 
-                        using var wicBitmap = ImageLoader.Load("Resources/4i.jpg");
+                        using var wicBitmap = ImageLoader.Load("Resources/Images/4i.jpg");
                         var ellipse = new SharpDX.Direct2D1.Ellipse(
                             new RawVector2(window.Width / 2f, window.Height / 2f),
                             window.Width / 2f,
@@ -100,9 +99,9 @@ public class Direct2DSandbox
 
     internal static async Task FromDirect3D11()
     {
-        await new DirextXApiHelpers.Window(600, 400).RunInWindow(Drawing);
+        await new Infrastructure.Window(600, 400).RunInWindow(Drawing);
 
-        Task Drawing(DirextXApiHelpers.Window window, WindowHandle windowHandle, CancellationToken cancellation) =>
+        Task Drawing(Infrastructure.Window window, WindowHandle windowHandle, CancellationToken cancellation) =>
             Task.Run(
                 () =>
                 {

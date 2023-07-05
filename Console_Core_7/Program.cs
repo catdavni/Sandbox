@@ -2,5 +2,5 @@
 using SharpDxSandbox;
 
 //EntryPointCodeGen.RunRoslyn();
-await EntryPointSharpDx.RunDirect3D();
+await EntryPointSharpDx.Run();
 Console.WriteLine("Hello, World!");

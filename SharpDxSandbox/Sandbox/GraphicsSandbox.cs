@@ -1,6 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using SharpDX;
-using SharpDxSandbox.Api.Implementation;
+using SharpDxSandbox.Graphics;
+using SharpDxSandbox.Graphics.Drawables;
+using SharpDxSandbox.Infrastructure;
 using SharpDxSandbox.Window;
 
 namespace SharpDxSandbox.Sandbox;
@@ -17,15 +19,20 @@ internal sealed class GraphicsSandbox
 
     private readonly ConcurrentDictionary<int, ModelState> _modelsState = new();
 
-    public Task Start() => new DirextXApiHelpers.Window(WindowWidth, WindowHeight).RunInWindow(Drawing);
+    public Task Start() => new Infrastructure.Window(WindowWidth, WindowHeight).RunInWindow(Drawing);
 
-    private async Task Drawing(DirextXApiHelpers.Window window, WindowHandle windowHandle, CancellationToken cancellation)
+    private async Task Drawing(Infrastructure.Window window, WindowHandle windowHandle, CancellationToken cancellation)
     {
-        using var graphics = new Graphics(window, windowHandle);
-        using var resourceFactory = new ResourceFactory();
+        using var graphics = new Graphics.Graphics(window, windowHandle);
+        using var resourceFactory = new ResourceFactory(graphics.Logger);
 
         window.KeyPressed += HandleRotations;
         window.KeyPressed += MaybeAddModelHandler;
+
+        // for (int i = 0; i < 3000; i++)
+        // {
+        //     MaybeAddModelHandler(this, new KeyPressedEventArgs("1"));
+        // }
 
         await graphics.Work(cancellation);
 
@@ -35,7 +42,7 @@ internal sealed class GraphicsSandbox
         void MaybeAddModelHandler(object s, KeyPressedEventArgs e) => MaybeAddModel(e, resourceFactory, graphics);
     }
 
-    private void MaybeAddModel(KeyPressedEventArgs keyPressedEventArgs, ResourceFactory resourceFactory, Graphics graphics)
+    private void MaybeAddModel(KeyPressedEventArgs keyPressedEventArgs, ResourceFactory resourceFactory, Graphics.Graphics graphics)
     {
         switch (keyPressedEventArgs.Input)
         {
@@ -79,13 +86,13 @@ internal sealed class GraphicsSandbox
         const float modelRadius = 2;
         const float modelDepth = ZNear + (ZFar - ZNear) / 2;
 
-        var middleHeight =_frustum.GetHeightAtDepth(modelDepth) / 2 - modelRadius;
+        var middleHeight = _frustum.GetHeightAtDepth(modelDepth) / 2 - modelRadius;
         var middleWidth = _frustum.GetWidthAtDepth(modelDepth) / 2 - modelRadius;
 
         var x = (float)Random.Shared.NextDouble(middleWidth / 2, middleWidth);
         var y = (float)Random.Shared.NextDouble(-middleHeight, middleHeight);
         var position1 = new Vector3(x, y, modelDepth);
-        
+
         var rotation = (float)Random.Shared.NextDouble(0, Math.PI * 2);
         return new ModelState(position1, rotation, rotation, rotation);
     }
@@ -110,7 +117,7 @@ internal sealed class GraphicsSandbox
         var model = _modelsState[modelKey];
         var divider = (2 * Math.PI);
         var rotY = (model.RotY + stepForward) % divider;
-        _modelsState[modelKey] = model with {  RotY = (float)rotY };
+        _modelsState[modelKey] = model with { RotY = (float)rotY };
     }
 
     private void HandleRotations(object sender, KeyPressedEventArgs e)

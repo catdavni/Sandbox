@@ -1,22 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Reflection;
 using Assimp;
 using SharpDX.Direct3D11;
 using SharpDX.Mathematics.Interop;
-using SharpDxSandbox.Api.Interface;
+using SharpDxSandbox.Graphics;
+using SharpDxSandbox.Graphics.Drawables;
 
-namespace SharpDxSandbox.Api.Implementation;
+namespace SharpDxSandbox.Infrastructure;
 
 internal class ModelLoader
 {
+    private static readonly string ModelsPath = Path.Combine("Resources", "Models");
+    
     public static FromModel LoadCube(Device device, IResourceFactory resourceFactory)
     {
-        var root = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        using var fs = new FileIOSystem(Path.Combine(root, "Models"));
+        using var fs = new FileIOSystem(ModelsPath);
 
         var context = new AssimpContext();
         context.SetIOSystem(fs);
@@ -31,8 +28,7 @@ internal class ModelLoader
 
     public static FromModel LoadSphere(Device device, IResourceFactory resourceFactory)
     {
-        var root = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        using var fs = new FileIOSystem(Path.Combine(root, "Models"));
+        using var fs = new FileIOSystem(ModelsPath);
 
         var context = new AssimpContext();
         context.SetIOSystem(fs);

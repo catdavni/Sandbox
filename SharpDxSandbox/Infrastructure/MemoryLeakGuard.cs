@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics;
 
-namespace SharpDxSandbox.DirextXApiHelpers;
+namespace SharpDxSandbox.Infrastructure;
 
 public sealed class MemoryLeakGuard : IDisposable
 {
