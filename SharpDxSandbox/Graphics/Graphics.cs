@@ -5,7 +5,7 @@ using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
 using SharpDxSandbox.Graphics.Drawables;
 using SharpDxSandbox.Infrastructure;
-using SharpDxSandbox.Infrastructure.Disposable;
+using SharpDxSandbox.Infrastructure.Disposables;
 using SharpDxSandbox.Window;
 
 namespace SharpDxSandbox.Graphics;

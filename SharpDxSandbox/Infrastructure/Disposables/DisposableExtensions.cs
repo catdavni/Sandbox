@@ -1,4 +1,4 @@
-﻿namespace SharpDxSandbox.Infrastructure.Disposable;
+﻿namespace SharpDxSandbox.Infrastructure.Disposables;
 
 public static class DisposableExtensions
 {

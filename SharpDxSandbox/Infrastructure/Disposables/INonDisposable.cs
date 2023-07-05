@@ -1,4 +1,4 @@
-﻿namespace SharpDxSandbox.Infrastructure.Disposable;
+﻿namespace SharpDxSandbox.Infrastructure.Disposables;
 
 public interface INonDisposable<out T> where T : IDisposable
 {

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using SharpDX;
 using SharpDxSandbox.Graphics;
 using SharpDxSandbox.Graphics.Drawables;
@@ -29,10 +30,7 @@ internal sealed class GraphicsSandbox
         window.KeyPressed += HandleRotations;
         window.KeyPressed += MaybeAddModelHandler;
 
-        // for (int i = 0; i < 3000; i++)
-        // {
-        //     MaybeAddModelHandler(this, new KeyPressedEventArgs("1"));
-        // }
+        MakeTest();
 
         await graphics.Work(cancellation);
 
@@ -40,16 +38,29 @@ internal sealed class GraphicsSandbox
         window.KeyPressed -= MaybeAddModelHandler;
 
         void MaybeAddModelHandler(object s, KeyPressedEventArgs e) => MaybeAddModel(e, resourceFactory, graphics);
+
+        void MakeTest()
+        {
+            const int count = 3000;
+            var start = Stopwatch.GetTimestamp();
+            for (var i = 0; i < count; i++)
+            {
+                MaybeAddModelHandler(this, new KeyPressedEventArgs("3"));
+                MaybeAddModelHandler(this, new KeyPressedEventArgs("4"));
+            }
+            var elapsed = Stopwatch.GetElapsedTime(start);
+            Trace.WriteLine($"{count} elements was loaded in {elapsed.TotalSeconds}s");
+        }
     }
 
-    private void MaybeAddModel(KeyPressedEventArgs keyPressedEventArgs, ResourceFactory resourceFactory, Graphics.Graphics graphics)
+    private void MaybeAddModel(KeyPressedEventArgs keyPressedEventArgs, IResourceFactory resourceFactory, Graphics.Graphics graphics)
     {
         switch (keyPressedEventArgs.Input)
         {
             case "1":
             {
                 var simpleCube = new SimpleCube(graphics.Device, resourceFactory);
-                _modelsState.TryAdd(simpleCube.GetHashCode(), CreateWithRandomPosition());
+                _modelsState.TryAdd(simpleCube.GetHashCode(), CreateWithPosition());
                 simpleCube.RegisterWorldTransform(() => StandardTransformationMatrix(simpleCube.GetHashCode()));
                 graphics.AddDrawable(simpleCube);
                 break;
@@ -57,7 +68,7 @@ internal sealed class GraphicsSandbox
             case "2":
             {
                 var coloredCube = new ColoredCube(graphics.Device, resourceFactory);
-                _modelsState.TryAdd(coloredCube.GetHashCode(), CreateWithRandomPosition());
+                _modelsState.TryAdd(coloredCube.GetHashCode(), CreateWithPosition());
                 coloredCube.RegisterWorldTransform(() => StandardTransformationMatrix(coloredCube.GetHashCode()));
                 graphics.AddDrawable(coloredCube);
                 break;
@@ -65,7 +76,7 @@ internal sealed class GraphicsSandbox
             case "3":
             {
                 var model = ModelLoader.LoadCube(graphics.Device, resourceFactory);
-                _modelsState.TryAdd(model.GetHashCode(), CreateWithRandomPosition());
+                _modelsState.TryAdd(model.GetHashCode(), CreateWithPosition());
                 model.RegisterWorldTransform(() => StandardTransformationMatrix(model.GetHashCode()));
                 graphics.AddDrawable(model);
                 break;
@@ -73,7 +84,7 @@ internal sealed class GraphicsSandbox
             case "4":
             {
                 var model = ModelLoader.LoadSphere(graphics.Device, resourceFactory);
-                _modelsState.TryAdd(model.GetHashCode(), CreateWithRandomPosition());
+                _modelsState.TryAdd(model.GetHashCode(), CreateWithPosition());
                 model.RegisterWorldTransform(() => StandardTransformationMatrix(model.GetHashCode()));
                 graphics.AddDrawable(model);
                 break;
@@ -81,20 +92,27 @@ internal sealed class GraphicsSandbox
         }
     }
 
-    private static ModelState CreateWithRandomPosition()
+    private static ModelState CreateWithPosition(bool random = true)
     {
         const float modelRadius = 2;
         const float modelDepth = ZNear + (ZFar - ZNear) / 2;
 
-        var middleHeight = _frustum.GetHeightAtDepth(modelDepth) / 2 - modelRadius;
-        var middleWidth = _frustum.GetWidthAtDepth(modelDepth) / 2 - modelRadius;
+        return random ? MakeRandomPosition() : MakeCenterPosition();
 
-        var x = (float)Random.Shared.NextDouble(middleWidth / 2, middleWidth);
-        var y = (float)Random.Shared.NextDouble(-middleHeight, middleHeight);
-        var position1 = new Vector3(x, y, modelDepth);
+        ModelState MakeCenterPosition() => new(new Vector3(0, 0, modelDepth/4), 0, 0, 0);
 
-        var rotation = (float)Random.Shared.NextDouble(0, Math.PI * 2);
-        return new ModelState(position1, rotation, rotation, rotation);
+        ModelState MakeRandomPosition()
+        {
+            var middleHeight = _frustum.GetHeightAtDepth(modelDepth) / 2 - modelRadius;
+            var middleWidth = _frustum.GetWidthAtDepth(modelDepth) / 2 - modelRadius;
+
+            var x = (float)Random.Shared.NextDouble(middleWidth / 2, middleWidth);
+            var y = (float)Random.Shared.NextDouble(-middleHeight, middleHeight);
+            var position1 = new Vector3(x, y, modelDepth);
+
+            var rotation = (float)Random.Shared.NextDouble(0, Math.PI * 2);
+            return new ModelState(position1, rotation, rotation, rotation);
+        }
     }
 
     private Matrix StandardTransformationMatrix(int modelHash)
@@ -111,11 +129,11 @@ internal sealed class GraphicsSandbox
         return transformationMatrix;
     }
 
-    void RandomizeCoordinates(int modelKey)
+    private void RandomizeCoordinates(int modelKey)
     {
         const float stepForward = 0.01f;
         var model = _modelsState[modelKey];
-        var divider = (2 * Math.PI);
+        const double divider = (2 * Math.PI);
         var rotY = (model.RotY + stepForward) % divider;
         _modelsState[modelKey] = model with { RotY = (float)rotY };
     }
@@ -174,7 +192,7 @@ internal sealed class GraphicsSandbox
                 foreach (var model in _modelsState.Keys)
                 {
                     var value = _modelsState[model];
-                    value = value with { Position = Vector3.Add(value.Position, new Vector3(0, 0, 0.1f)) };
+                    value = value with { Position = Vector3.Add(value.Position, new Vector3(0, 0, 0.3f)) };
                     _modelsState[model] = value;
                 }
                 break;
@@ -182,7 +200,7 @@ internal sealed class GraphicsSandbox
                 foreach (var model in _modelsState.Keys)
                 {
                     var value = _modelsState[model];
-                    value = value with { Position = Vector3.Add(value.Position, new Vector3(0, 0, -0.1f)) };
+                    value = value with { Position = Vector3.Add(value.Position, new Vector3(0, 0, -0.3f)) };
                     _modelsState[model] = value;
                 }
                 break;
