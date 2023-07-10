@@ -6,4 +6,6 @@ public readonly record struct DrawPipelineMetadata(
     int InputLayoutHash,
     int IndexBufferHash,
     int PixelShaderHash,
+    int PixelShaderTextureView,
+    int SamplerHash,
     int PixelShaderConstantBufferHash);

@@ -5,6 +5,7 @@ using SharpDxSandbox.Graphics;
 using SharpDxSandbox.Graphics.Drawables;
 using SharpDxSandbox.Infrastructure;
 using SharpDxSandbox.Window;
+using Plane = SharpDxSandbox.Graphics.Drawables.Plane;
 
 namespace SharpDxSandbox.Sandbox;
 
@@ -42,11 +43,13 @@ internal sealed class GraphicsSandbox
         void MakeTest()
         {
             const int count = 3000;
+            //const int count = 1;
             var start = Stopwatch.GetTimestamp();
             for (var i = 0; i < count; i++)
             {
-                MaybeAddModelHandler(this, new KeyPressedEventArgs("3"));
-                MaybeAddModelHandler(this, new KeyPressedEventArgs("4"));
+                //MaybeAddModelHandler(this, new KeyPressedEventArgs("3"));
+                //MaybeAddModelHandler(this, new KeyPressedEventArgs("5"));
+                MaybeAddModelHandler(this, new KeyPressedEventArgs((i % 6).ToString()));
             }
             var elapsed = Stopwatch.GetElapsedTime(start);
             Trace.WriteLine($"{count} elements was loaded in {elapsed.TotalSeconds}s");
@@ -89,6 +92,14 @@ internal sealed class GraphicsSandbox
                 graphics.AddDrawable(model);
                 break;
             }
+            case "5":
+            {
+                var plane = new Plane(graphics.Device, resourceFactory);
+                _modelsState.TryAdd(plane.GetHashCode(), CreateWithPosition());
+                plane.RegisterWorldTransform(() => StandardTransformationMatrix(plane.GetHashCode()));
+                graphics.AddDrawable(plane);
+                break;
+            }
         }
     }
 
@@ -99,7 +110,7 @@ internal sealed class GraphicsSandbox
 
         return random ? MakeRandomPosition() : MakeCenterPosition();
 
-        ModelState MakeCenterPosition() => new(new Vector3(0, 0, modelDepth/4), 0, 0, 0);
+        ModelState MakeCenterPosition() => new(new Vector3(0, 0, modelDepth / 4), 0, 0, 0);
 
         ModelState MakeRandomPosition()
         {

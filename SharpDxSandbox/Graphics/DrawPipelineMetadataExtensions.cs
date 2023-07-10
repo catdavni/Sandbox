@@ -74,6 +74,26 @@ public static class DrawPipelineMetadataExtensions
         return origin;
     }
 
+    public static DrawPipelineMetadata EnsureSamplerState(this DrawPipelineMetadata origin, Device device, SamplerState sampler)
+    {
+        if (origin.SamplerHash != sampler.GetHashCode())
+        {
+            device.ImmediateContext.PixelShader.SetSampler(0, sampler);
+            origin = origin with { SamplerHash = sampler.GetHashCode() };
+        }
+        return origin;
+    }
+    
+    public static DrawPipelineMetadata EnsurePixelShaderTextureView(this DrawPipelineMetadata origin, Device device, ShaderResourceView textureView)
+    {
+        if (origin.PixelShaderTextureView != textureView.GetHashCode())
+        {
+            device.ImmediateContext.PixelShader.SetShaderResource(0, textureView);
+            origin = origin with { PixelShaderTextureView = textureView.GetHashCode() };
+        }
+        return origin;
+    }
+
     public static DrawPipelineMetadata EnsurePixelShaderConstantBuffer(this DrawPipelineMetadata origin, Device device, Buffer shader)
     {
         if (origin.PixelShaderConstantBufferHash != shader.GetHashCode())

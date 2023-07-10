@@ -48,7 +48,7 @@ public class Direct2DSandbox
                             new SharpDX.Direct2D1.RenderTargetProperties(
                                 new SharpDX.Direct2D1.PixelFormat(SharpDX.DXGI.Format.Unknown, AlphaMode.Premultiplied)));
 
-                        using var wicBitmap = ImageLoader.Load("Resources/Images/4i.jpg");
+                        using var wicBitmap = ImageLoader.Load("4i.jpg");
                         var ellipse = new SharpDX.Direct2D1.Ellipse(
                             new RawVector2(window.Width / 2f, window.Height / 2f),
                             window.Width / 2f,
