@@ -8,6 +8,7 @@ using SharpDX.Mathematics.Interop;
 using SharpDxSandbox.Graphics;
 using SharpDxSandbox.Graphics.Drawables;
 using SharpDxSandbox.Infrastructure;
+using SharpDxSandbox.Resources;
 using SharpDxSandbox.Window;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Device = SharpDX.Direct3D11.Device;
@@ -205,7 +206,7 @@ public static class Direct3DSandbox
                     Marshal.SizeOf<RawVector3>());
                 device.ImmediateContext.InputAssembler.SetVertexBuffers(0, new VertexBufferBinding(vertexBuffer, Marshal.SizeOf<RawVector3>(), 0));
 
-                using var vertexShaderBytes = ShaderBytecode.CompileFromFile("Resources/Shaders/cube.hlsl", "VShader", "vs_4_0");
+                using var vertexShaderBytes = ShaderBytecode.CompileFromFile($"Resources/Shaders/{Constants.Shaders.WithColorsConstantBuffer}", "VShader", "vs_4_0");
                 using var vertexShader = new VertexShader(device, vertexShaderBytes.Bytecode);
                 device.ImmediateContext.VertexShader.Set(vertexShader);
 
@@ -226,7 +227,7 @@ public static class Direct3DSandbox
                 using var indexBuffer = new Buffer(device, indexDataStream, Marshal.SizeOf<int>() * triangleIndices.Length, ResourceUsage.Default, BindFlags.IndexBuffer, CpuAccessFlags.None, ResourceOptionFlags.None, Marshal.SizeOf<int>());
                 device.ImmediateContext.InputAssembler.SetIndexBuffer(indexBuffer, Format.R32_UInt, 0);
 
-                using var pixelShaderBytes = ShaderBytecode.CompileFromFile("Resources/Shaders/cube.hlsl", "PShader", "ps_4_0");
+                using var pixelShaderBytes = ShaderBytecode.CompileFromFile($"Resources/Shaders/{Constants.Shaders.WithColorsConstantBuffer}", "PShader", "ps_4_0");
                 using var pixelShader = new PixelShader(device, pixelShaderBytes.Bytecode);
                 device.ImmediateContext.PixelShader.Set(pixelShader);
 
@@ -351,9 +352,9 @@ public static class Direct3DSandbox
 
                         // creating shaders
                         using var vertexShaderByteCode =
-                            ShaderBytecode.CompileFromFile("Resources/Shaders/test.hlsl", "VShader", "vs_4_0");
+                            ShaderBytecode.CompileFromFile($"Resources/Shaders/{Resources.Constants.Shaders.Test}", "VShader", "vs_4_0");
                         using var pixelShaderByteCode =
-                            ShaderBytecode.CompileFromFile("Resources/Shaders/test.hlsl", "PShader", "ps_4_0");
+                            ShaderBytecode.CompileFromFile($"Resources/Shaders/{Resources.Constants.Shaders.Test}", "PShader", "ps_4_0");
                         using var vertexShader = new VertexShader(device, vertexShaderByteCode);
                         using var pixelShader = new PixelShader(device, pixelShaderByteCode);
                         device.ImmediateContext.VertexShader.Set(vertexShader);

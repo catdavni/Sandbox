@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using SharpDX;
 using SharpDX.D3DCompiler;
 using SharpDX.Direct3D;
@@ -48,8 +49,10 @@ internal static class ResourceFactoryExtensions
         T[] data,
         BindFlags bindingFlags,
         ResourceUsage resourceUsage = ResourceUsage.Default,
-        CpuAccessFlags cpuAccessFlags = CpuAccessFlags.None) where T : struct =>
-        factory.EnsureCrated(key,
+        CpuAccessFlags cpuAccessFlags = CpuAccessFlags.None,
+        [CallerArgumentExpression(nameof(data))]
+        string dataExpression = null) where T : struct =>
+        factory.EnsureCrated(key + "_" + dataExpression,
             () =>
             {
                 using var verticesByteCode = DataStream.Create(data, true, false);
@@ -87,7 +90,7 @@ internal static class ResourceFactoryExtensions
 
     public static ShaderResourceView EnsureTextureAsPixelShaderResourceView(this IResourceFactory factory, Device device, string imageFileName)
     {
-       return factory.EnsureCrated($"{imageFileName}_ShaderResourceView",
+        return factory.EnsureCrated($"{imageFileName}_ShaderResourceView",
             () =>
             {
                 using var img = ImageLoader.Load(imageFileName);

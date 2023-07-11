@@ -31,7 +31,7 @@ internal sealed class GraphicsSandbox
         window.KeyPressed += HandleRotations;
         window.KeyPressed += MaybeAddModelHandler;
 
-        MakeTest();
+        //MakeTest();
 
         await graphics.Work(cancellation);
 
@@ -43,13 +43,13 @@ internal sealed class GraphicsSandbox
         void MakeTest()
         {
             const int count = 3000;
-            //const int count = 1;
+            //const int count = 6;
             var start = Stopwatch.GetTimestamp();
             for (var i = 0; i < count; i++)
             {
                 //MaybeAddModelHandler(this, new KeyPressedEventArgs("3"));
                 //MaybeAddModelHandler(this, new KeyPressedEventArgs("5"));
-                MaybeAddModelHandler(this, new KeyPressedEventArgs((i % 6).ToString()));
+                MaybeAddModelHandler(this, new KeyPressedEventArgs((i % 7).ToString()));
             }
             var elapsed = Stopwatch.GetElapsedTime(start);
             Trace.WriteLine($"{count} elements was loaded in {elapsed.TotalSeconds}s");
@@ -95,6 +95,14 @@ internal sealed class GraphicsSandbox
             case "5":
             {
                 var plane = new Plane(graphics.Device, resourceFactory);
+                _modelsState.TryAdd(plane.GetHashCode(), CreateWithPosition());
+                plane.RegisterWorldTransform(() => StandardTransformationMatrix(plane.GetHashCode()));
+                graphics.AddDrawable(plane);
+                break;
+            }
+            case "6":
+            {
+                var plane = new SkinnedCube(graphics.Device, resourceFactory);
                 _modelsState.TryAdd(plane.GetHashCode(), CreateWithPosition());
                 plane.RegisterWorldTransform(() => StandardTransformationMatrix(plane.GetHashCode()));
                 graphics.AddDrawable(plane);

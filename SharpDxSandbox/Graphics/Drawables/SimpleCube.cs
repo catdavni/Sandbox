@@ -3,6 +3,7 @@ using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
+using SharpDxSandbox.Resources;
 using SharpDxSandbox.Resources.Models;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Device = SharpDX.Direct3D11.Device;
@@ -26,7 +27,7 @@ internal sealed class SimpleCube : IDrawable
         4, 0,
         5, 4
     };
-    
+
     private readonly Buffer _indexBuffer;
     private readonly Device _device;
     private readonly IResourceFactory _resourceFactory;
@@ -41,24 +42,24 @@ internal sealed class SimpleCube : IDrawable
     {
         _device = device;
         _resourceFactory = resourceFactory;
-        
-        _vertexBuffer = resourceFactory.EnsureBuffer(device, Cube.Vertices.Key, Cube.Vertices.Data, BindFlags.VertexBuffer);
+
+        _vertexBuffer = resourceFactory.EnsureBuffer(device, Cube.Vertices.Key, Cube.Vertices.Data.Select(d => d.Vertex).ToArray(), BindFlags.VertexBuffer);
         _indexBuffer = resourceFactory.EnsureBuffer(device, $"{nameof(SimpleCube)}LineIndexBuffer", LineIndices, BindFlags.IndexBuffer);
-        
-        var compiledVertexShader = resourceFactory.EnsureVertexShader(device, "cube.hlsl", "VShader");
+
+        var compiledVertexShader = resourceFactory.EnsureVertexShader(device, Constants.Shaders.WithColorsConstantBuffer, "VShader");
         _vertexShader = compiledVertexShader.Shader;
         _inputLayout = resourceFactory.EnsureInputLayout(device, compiledVertexShader.ByteCode, new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0));
-        _pixelShader = resourceFactory.EnsurePixelShader(device, "cube.hlsl", "PShader");
+        _pixelShader = resourceFactory.EnsurePixelShader(device, Constants.Shaders.WithColorsConstantBuffer, "PShader");
         _pixelShaderConstantBuffer = resourceFactory.EnsureBuffer(device, Cube.SideColors.Key, Cube.SideColors.Data, BindFlags.ConstantBuffer);
     }
-    
-    public void RegisterWorldTransform(Func<Matrix> transform) 
+
+    public void RegisterWorldTransform(Func<Matrix> transform)
         => _updateTransformMatrix = _resourceFactory.EnsureUpdateTransformMatrix(_device, Cube.TransformationMatrixKey, transform);
 
     public DrawPipelineMetadata Draw(DrawPipelineMetadata previous, Device device)
     {
         var currentMetadata = previous;
-        
+
         currentMetadata = currentMetadata.EnsureVertexBufferBinding<RawVector3>(device, _vertexBuffer);
         currentMetadata = currentMetadata.EnsureInputLayoutBinding(device, _inputLayout);
         currentMetadata = currentMetadata.EnsureVertexShaderBinding(device, _vertexShader);

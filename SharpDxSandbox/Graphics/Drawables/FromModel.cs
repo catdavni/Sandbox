@@ -3,6 +3,7 @@ using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
+using SharpDxSandbox.Resources;
 using SharpDxSandbox.Resources.Models;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Device = SharpDX.Direct3D11.Device;
@@ -31,10 +32,10 @@ internal sealed class FromModel : IDrawable
         _vertexBuffer = resourceFactory.EnsureBuffer(device, MakeKey("Vertices"), vertices, BindFlags.VertexBuffer);
         _indexBuffer = resourceFactory.EnsureBuffer(device, key, indices, BindFlags.IndexBuffer);
 
-        var compiledVertexShader = resourceFactory.EnsureVertexShader(device, "cube.hlsl", "VShader");
+        var compiledVertexShader = resourceFactory.EnsureVertexShader(device, Constants.Shaders.WithColorsConstantBuffer, "VShader");
         _vertexShader = compiledVertexShader.Shader;
         _inputLayout = resourceFactory.EnsureInputLayout(device, compiledVertexShader.ByteCode, new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0));
-        _pixelShader = resourceFactory.EnsurePixelShader(device, "cube.hlsl", "PShader");
+        _pixelShader = resourceFactory.EnsurePixelShader(device, Constants.Shaders.WithColorsConstantBuffer, "PShader");
         _pixelShaderConstantBuffer = resourceFactory.EnsureBuffer(device, Cube.SideColors.Key, Cube.SideColors.Data, BindFlags.ConstantBuffer);
 
         string MakeKey(string purpose) => $"{nameof(FromModel)}_{key}_{purpose}";

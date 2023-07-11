@@ -5,7 +5,7 @@
     float3 color : COLOR;
 };
 
-cbuffer ConstantBuffer : register(b0)
+cbuffer TransformMatrix: register(b0)
 {
   float4x4 WorldViewProjection;
 };

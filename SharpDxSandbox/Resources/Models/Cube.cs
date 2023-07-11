@@ -1,4 +1,5 @@
 ﻿using SharpDX.Mathematics.Interop;
+using SharpDxSandbox.Graphics.Drawables;
 
 namespace SharpDxSandbox.Resources.Models;
 
@@ -6,18 +7,18 @@ public static class Cube
 {
     public static readonly string TransformationMatrixKey = "TransformationMatrix_D90C55C4-E22A-40C0-B43E-E8E44613A701";
 
-    public static readonly (string Key, RawVector3[] Data) Vertices =
+    public static readonly (string Key, VertexWithTexCoord[] Data) Vertices =
         ("CubeVertices_B0C7231A-6B29-4576-A6FE-A1D4439316AA", new[]
         {
-            new RawVector3(-1f, -1f, 1f), // front bottom left
-            new RawVector3(-1f, 1f, 1f), // front top left
-            new RawVector3(1f, 1f, 1f), // front top right
-            new RawVector3(1f, -1f, 1f), // front bottom right
+            new VertexWithTexCoord(new RawVector3(-1f, -1f, 1f), new RawVector2(0, 1)), // front bottom left
+            new VertexWithTexCoord(new RawVector3(-1f, 1f, 1f), new RawVector2(0, 0)), // front top left
+            new VertexWithTexCoord(new RawVector3(1f, 1f, 1f), new RawVector2(1, 0)), // front top right
+            new VertexWithTexCoord(new RawVector3(1f, -1f, 1f), new RawVector2(1, 1)), // front bottom right
 
-            new RawVector3(-1f, -1f, -1f), // back bottom left
-            new RawVector3(-1f, 1f, -1f), // back top left
-            new RawVector3(1f, 1f, -1f), // back top right
-            new RawVector3(1f, -1f, -1f), // back bottom right
+            new VertexWithTexCoord(new RawVector3(-1f, -1f, -1f), new RawVector2(1, 1)), // back bottom left
+            new VertexWithTexCoord(new RawVector3(-1f, 1f, -1f), new RawVector2(1, 0)), // back top left
+            new VertexWithTexCoord(new RawVector3(1f, 1f, -1f), new RawVector2(0, 0)), // back top right
+            new VertexWithTexCoord(new RawVector3(1f, -1f, -1f), new RawVector2(0, 1)) // back bottom right
         });
 
     public static readonly (string Key, int[] Data) TriangleIndices =

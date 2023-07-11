@@ -28,7 +28,7 @@
       <None Update="Resources\Images\9i.jpg">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
-      <None Update="Resources\Shaders\cube.hlsl">
+      <None Update="Resources\Shaders\WithColorsCb.hlsl">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
       <None Update="Resources\Shaders\test.hlsl">
@@ -40,7 +40,7 @@
       <None Update="Resources\Models\sphere.obj">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
-      <None Update="Resources\Shaders\plane.hlsl">
+      <None Update="Resources\Shaders\WithTexCoordAndSampler.hlsl">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
     </ItemGroup>
