@@ -43,6 +43,9 @@
       <None Update="Resources\Shaders\WithTexCoordAndSampler.hlsl">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
+      <None Update="Resources\Images\cube.png">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

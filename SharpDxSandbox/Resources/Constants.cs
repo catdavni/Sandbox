@@ -7,6 +7,7 @@ public static class Constants
         public const string CatSquare = "1i.jpg";
         public const string CatGrumpyVertical = "4i.jpg";
         public const string CatCuriousVertical = "4i.jpg";
+        public const string CubeSides = "cube.png";
     }
     
     public static class Models

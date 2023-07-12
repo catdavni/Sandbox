@@ -30,7 +30,7 @@ internal sealed class FromModel : IDrawable
         _indices = indices;
 
         _vertexBuffer = resourceFactory.EnsureBuffer(device, MakeKey("Vertices"), vertices, BindFlags.VertexBuffer);
-        _indexBuffer = resourceFactory.EnsureBuffer(device, key, indices, BindFlags.IndexBuffer);
+        _indexBuffer = resourceFactory.EnsureBuffer(device, MakeKey("Indices"), indices, BindFlags.IndexBuffer);
 
         var compiledVertexShader = resourceFactory.EnsureVertexShader(device, Constants.Shaders.WithColorsConstantBuffer, "VShader");
         _vertexShader = compiledVertexShader.Shader;

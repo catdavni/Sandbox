@@ -45,13 +45,13 @@ internal sealed class GraphicsSandbox
         void MakeTest()
         {
             const int count = 3000;
-            //const int count = 6;
+            //const int count = 1;
             var start = Stopwatch.GetTimestamp();
             for (var i = 0; i < count; i++)
             {
                 //MaybeAddModelHandler(this, new KeyPressedEventArgs("3"));
-                //MaybeAddModelHandler(this, new KeyPressedEventArgs("5"));
-                MaybeAddModelHandler(this, new KeyPressedEventArgs((i % 7).ToString()));
+                //MaybeAddModelHandler(this, new KeyPressedEventArgs("7"));
+                MaybeAddModelHandler(this, new KeyPressedEventArgs((i % 8).ToString()));
             }
             var elapsed = Stopwatch.GetElapsedTime(start);
             Trace.WriteLine($"{count} elements was loaded in {elapsed.TotalSeconds}s");
@@ -108,6 +108,14 @@ internal sealed class GraphicsSandbox
                 _modelsState.TryAdd(plane.GetHashCode(), CreateWithPosition());
                 plane.RegisterWorldTransform(() => StandardTransformationMatrix(plane.GetHashCode()));
                 graphics.AddDrawable(plane);
+                break;
+            }
+            case "7":
+            {
+                var model = ModelLoader.LoadSkinnedCube(graphics.Device, resourceFactory);
+                _modelsState.TryAdd(model.GetHashCode(), CreateWithPosition());
+                model.RegisterWorldTransform(() => StandardTransformationMatrix(model.GetHashCode()));
+                graphics.AddDrawable(model);
                 break;
             }
         }
