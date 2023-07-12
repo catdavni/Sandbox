@@ -29,8 +29,8 @@ internal sealed class SkinnedCube : IDrawable
         _device = device;
         _resourceFactory = resourceFactory;
 
-        _vertexBuffer = resourceFactory.EnsureBuffer(device, Cube.Vertices.Key, Cube.Vertices.Data, BindFlags.VertexBuffer);
-        _indexBuffer = resourceFactory.EnsureBuffer(device, Cube.TriangleIndices.Key, Cube.TriangleIndices.Data, BindFlags.IndexBuffer);
+        _vertexBuffer = resourceFactory.EnsureBuffer(device, Cube.Skinned.Vertices.Key, Cube.Skinned.Vertices.Data, BindFlags.VertexBuffer);
+        _indexBuffer = resourceFactory.EnsureBuffer(device, Cube.Skinned.TriangleIndices.Key, Cube.Skinned.TriangleIndices.Data, BindFlags.IndexBuffer);
 
         var compiledVertexShader = resourceFactory.EnsureVertexShader(device, Constants.Shaders.WithTexCoordAndSampler, "VShader");
         _vertexShader = compiledVertexShader.Shader;
@@ -77,7 +77,7 @@ internal sealed class SkinnedCube : IDrawable
 
         device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
 
-        device.ImmediateContext.DrawIndexed(Cube.TriangleIndices.Data.Length, 0, 0);
+        device.ImmediateContext.DrawIndexed(Cube.Skinned.TriangleIndices.Data.Length, 0, 0);
 
         return currentMetadata;
     }

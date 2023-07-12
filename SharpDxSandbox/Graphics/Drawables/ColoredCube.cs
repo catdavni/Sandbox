@@ -37,8 +37,8 @@ internal sealed class ColoredCube : IDrawable
         _device = device;
         _resourceFactory = resourceFactory;
 
-        _vertexBuffer = resourceFactory.EnsureBuffer(device, Cube.Vertices.Key, Cube.Vertices.Data.Select(d => d.Vertex).ToArray(), BindFlags.VertexBuffer);
-        _indexBuffer = resourceFactory.EnsureBuffer(device, Cube.TriangleIndices.Key, Cube.TriangleIndices.Data, BindFlags.IndexBuffer);
+        _vertexBuffer = resourceFactory.EnsureBuffer(device, Cube.Simple.Vertices.Key, Cube.Simple.Vertices.Data, BindFlags.VertexBuffer);
+        _indexBuffer = resourceFactory.EnsureBuffer(device, Cube.Simple.TriangleIndices.Key, Cube.Simple.TriangleIndices.Data, BindFlags.IndexBuffer);
 
         var compiledVertexShader = resourceFactory.EnsureVertexShader(device, Constants.Shaders.WithColorsConstantBuffer, "VShader");
         _vertexShader = compiledVertexShader.Shader;
@@ -67,7 +67,7 @@ internal sealed class ColoredCube : IDrawable
 
         device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
 
-        device.ImmediateContext.DrawIndexed(Cube.TriangleIndices.Data.Length, 0, 0);
+        device.ImmediateContext.DrawIndexed(Cube.Simple.TriangleIndices.Data.Length, 0, 0);
 
         return currentMetadata;
     }

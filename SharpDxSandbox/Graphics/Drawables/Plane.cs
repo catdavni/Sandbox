@@ -91,10 +91,10 @@ file static class AuxiliaryData
         ($"{nameof(Plane)}_Vertices",
             new[]
             {
-                new VertexWithTexCoord(new RawVector3(-1, -1, -1), new RawVector2(0, 1)),
-                new VertexWithTexCoord(new RawVector3(-1, 1, -1), new RawVector2(0, 0)),
-                new VertexWithTexCoord(new RawVector3(1, 1, -1), new RawVector2(1, 0)),
-                new VertexWithTexCoord(new RawVector3(1, -1, -1), new RawVector2(1, 1))
+                new VertexWithTexCoord(new RawVector3(-1, -1, 0), new RawVector2(0, 1)),
+                new VertexWithTexCoord(new RawVector3(-1, 1, 0), new RawVector2(0, 0)),
+                new VertexWithTexCoord(new RawVector3(1, 1, 0), new RawVector2(1, 0)),
+                new VertexWithTexCoord(new RawVector3(1, -1, 0), new RawVector2(1, 1))
             });
 
     public static readonly (string Key, int[] Data) TriangleIndices =

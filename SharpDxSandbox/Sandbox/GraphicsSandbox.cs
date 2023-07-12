@@ -11,6 +11,8 @@ namespace SharpDxSandbox.Sandbox;
 
 internal sealed class GraphicsSandbox
 {
+    private static readonly bool RandomizePositionAndMovements = true;
+    
     private const int WindowWidth = 1024;
     private const int WindowHeight = 768;
     private const float ZNear = 1;
@@ -111,12 +113,12 @@ internal sealed class GraphicsSandbox
         }
     }
 
-    private static ModelState CreateWithPosition(bool random = true)
+    private static ModelState CreateWithPosition()
     {
         const float modelRadius = 2;
         const float modelDepth = ZNear + (ZFar - ZNear) / 2;
 
-        return random ? MakeRandomPosition() : MakeCenterPosition();
+        return RandomizePositionAndMovements ? MakeRandomPosition() : MakeCenterPosition();
 
         ModelState MakeCenterPosition() => new(new Vector3(0, 0, modelDepth / 4), 0, 0, 0);
 
@@ -136,16 +138,26 @@ internal sealed class GraphicsSandbox
 
     private Matrix StandardTransformationMatrix(int modelHash)
     {
-        RandomizeCoordinates(modelHash);
         var (position, rotX, rotY, rotZ) = _modelsState[modelHash];
-
-        var transformationMatrix = Matrix.Identity;
-        transformationMatrix *= Matrix.RotationYawPitchRoll(rotY, rotX, rotZ);
-        transformationMatrix *= Matrix.Translation(position.X, position.Y, 0);
-        transformationMatrix *= Matrix.RotationYawPitchRoll(rotY, rotX, 0);
-        transformationMatrix *= Matrix.Translation(0, 0, position.Z);
-        transformationMatrix *= ProjectionMatrix;
-        return transformationMatrix;
+        if (RandomizePositionAndMovements)
+        {
+            RandomizeCoordinates(modelHash);
+            var transformationMatrix = Matrix.Identity;
+            transformationMatrix *= Matrix.RotationYawPitchRoll(rotY, rotX, rotZ);
+            transformationMatrix *= Matrix.Translation(position.X, position.Y, 0);
+            transformationMatrix *= Matrix.RotationYawPitchRoll(rotY, rotX, 0);
+            transformationMatrix *= Matrix.Translation(0, 0, position.Z);
+            transformationMatrix *= ProjectionMatrix;
+            return transformationMatrix;
+        }
+        else
+        {
+            var transformationMatrix = Matrix.Identity;
+            transformationMatrix *= Matrix.RotationYawPitchRoll(rotY, rotX, rotZ);
+            transformationMatrix *= Matrix.Translation(position.X, position.Y, position.Z);
+            transformationMatrix *= ProjectionMatrix;
+            return transformationMatrix;
+        }
     }
 
     private void RandomizeCoordinates(int modelKey)
@@ -207,7 +219,7 @@ internal sealed class GraphicsSandbox
                 }
                 break;
             // Translation Z
-            case 'r':
+            case 'f':
                 foreach (var model in _modelsState.Keys)
                 {
                     var value = _modelsState[model];
@@ -215,7 +227,7 @@ internal sealed class GraphicsSandbox
                     _modelsState[model] = value;
                 }
                 break;
-            case 'f':
+            case 'r':
                 foreach (var model in _modelsState.Keys)
                 {
                     var value = _modelsState[model];

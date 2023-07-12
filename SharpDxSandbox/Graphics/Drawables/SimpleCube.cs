@@ -43,7 +43,7 @@ internal sealed class SimpleCube : IDrawable
         _device = device;
         _resourceFactory = resourceFactory;
 
-        _vertexBuffer = resourceFactory.EnsureBuffer(device, Cube.Vertices.Key, Cube.Vertices.Data.Select(d => d.Vertex).ToArray(), BindFlags.VertexBuffer);
+        _vertexBuffer = resourceFactory.EnsureBuffer(device, Cube.Simple.Vertices.Key, Cube.Simple.Vertices.Data, BindFlags.VertexBuffer);
         _indexBuffer = resourceFactory.EnsureBuffer(device, $"{nameof(SimpleCube)}LineIndexBuffer", LineIndices, BindFlags.IndexBuffer);
 
         var compiledVertexShader = resourceFactory.EnsureVertexShader(device, Constants.Shaders.WithColorsConstantBuffer, "VShader");
