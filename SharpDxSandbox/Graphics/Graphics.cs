@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.Diagnostics;
 using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
@@ -20,7 +19,7 @@ internal sealed class Graphics : IDisposable
     private readonly RenderTargetView _renderTargetView;
     private readonly SwapChain _swapChain;
 
-    public Graphics(Infrastructure.Window window)
+    public Graphics(Window window)
     {
         _drawables = new();
         _disposable = new DisposableStack();
@@ -28,8 +27,6 @@ internal sealed class Graphics : IDisposable
         try
         {
             Device = new SharpDX.Direct3D11.Device(DriverType.Hardware, DeviceCreationFlags.Debug).DisposeWith(_disposable);
-            Debug.Assert(Device != null, "Device is null!");
-            
             Logger = new DeviceLogger(Device).DisposeWith(_disposable);
 
             var dxgiDevice = Device.QueryInterface<SharpDX.DXGI.Device>().DisposeWith(_disposable);
@@ -119,7 +116,6 @@ internal sealed class Graphics : IDisposable
                 }
             },
             token);
-        //.ContinueWith(t=> _logger.FlushMessages(), TaskContinuationOptions.ExecuteSynchronously);
     }
 
     public void Dispose() => _disposable.Dispose();

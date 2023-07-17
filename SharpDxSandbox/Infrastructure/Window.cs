@@ -40,7 +40,7 @@ internal sealed class Window : IDisposable
 
     public int Height { get; private set; }
 
-    public event Action OnWindowSizeChanged;
+    public event EventHandler<EventArgs> OnWindowSizeChanged;
 
     public event EventHandler<KeyPressedEventArgs> OnKeyPressed;
 
@@ -70,7 +70,12 @@ internal sealed class Window : IDisposable
                     };
                     Win32Error.ThrowLastErrorIfNull(Macros.MAKEINTATOM(RegisterClass(wndClass)));
 
-                    const WindowStyles windowStyle = WindowStyles.WS_OVERLAPPEDWINDOW | WindowStyles.WS_VISIBLE;
+                    const WindowStyles windowStyle = WindowStyles.WS_OVERLAPPED |
+                                                     WindowStyles.WS_CAPTION |
+                                                     WindowStyles.WS_SYSMENU |
+                                                     WindowStyles.WS_THICKFRAME |
+                                                     WindowStyles.WS_MAXIMIZEBOX |
+                                                     WindowStyles.WS_VISIBLE;
 
                     var rect = new RECT(XPosition, YPosition, Width + XPosition, Height + YPosition);
                     Win32Error.ThrowLastErrorIfFalse(AdjustWindowRect(ref rect, windowStyle, false));
@@ -91,7 +96,7 @@ internal sealed class Window : IDisposable
                 {
                     waitWindowHandle.SetException(ex);
                 }
-                
+
                 while (!_windowMessagePumpCancellation.IsCancellationRequested && PumpWindowMessages())
                 {
                 }
@@ -126,12 +131,12 @@ internal sealed class Window : IDisposable
                 OnKeyPressed?.Invoke(this, new(char.ConvertFromUtf32((char)wparam)));
                 break;
             }
-            case WindowMessage.WM_SIZING:
+            case WindowMessage.WM_SIZE:
             {
-                var newSize = Marshal.PtrToStructure<RECT>(lparam);
-                Width = newSize.Width;
-                Height = newSize.Height;
-                OnWindowSizeChanged?.Invoke();
+                Width = Macros.LOWORD(lparam);
+                Height = Macros.HIWORD(lparam);
+                Console.WriteLine($"Size: {Width}:{Height}");
+                OnWindowSizeChanged?.Invoke(this, EventArgs.Empty);
                 break;
             }
             case WindowMessage.WM_DESTROY:

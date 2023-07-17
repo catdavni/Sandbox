@@ -4,42 +4,46 @@ using SharpDX;
 using SharpDxSandbox.Graphics;
 using SharpDxSandbox.Graphics.Drawables;
 using SharpDxSandbox.Infrastructure;
-using Plane = SharpDxSandbox.Graphics.Drawables.Plane;
 
 namespace SharpDxSandbox.Sandbox;
 
 internal sealed class GraphicsSandbox
 {
-    private static readonly bool RandomizePositionAndMovements = true;
-    
-    private const int WindowWidth = 1024;
-    private const int WindowHeight = 768;
+    private const bool RandomizePositionAndMovements = false;
+
     private const float ZNear = 1;
     private const float ZFar = 70;
 
-    private static readonly Matrix ProjectionMatrix = Matrix.PerspectiveLH(1, (float)WindowHeight / WindowWidth, ZNear, ZFar);
-    private static BoundingFrustum _frustum = new(ProjectionMatrix);
+    private Matrix _projectionMatrix;
+    private BoundingFrustum _frustum;
 
-    private readonly ConcurrentDictionary<int, ModelState> _modelsState = new();
+    private ConcurrentDictionary<int, ModelState> _modelsState = new();
 
-    public Task Start() => new Infrastructure.Window(WindowWidth, WindowHeight).RunInWindow(Drawing);
+    private Graphics.Graphics _graphics;
+    private ResourceFactory _resourceFactory;
 
-    private async Task Drawing(Infrastructure.Window window, CancellationToken cancellation)
+    public Task Start() => new Window(2048, 1512).RunInWindow(Drawing);
+
+    private async Task Drawing(Window window, CancellationToken cancellation)
     {
-        using var graphics = new Graphics.Graphics(window);
-        using var resourceFactory = new ResourceFactory(graphics.Logger);
+        _projectionMatrix = Matrix.PerspectiveLH(1, window.Height / (float)window.Width, ZNear, ZFar);
+        _frustum = new BoundingFrustum(_projectionMatrix);
 
-        window.OnKeyPressed += HandleRotations;
-        window.OnKeyPressed += MaybeAddModelHandler;
+        using (_graphics = new Graphics.Graphics(window))
+        using (_resourceFactory = new ResourceFactory(_graphics.Logger))
+        {
+            RestoreModels(_graphics, _resourceFactory);
 
-        //MakeTest();
+            window.OnKeyPressed += HandleRotations;
+            window.OnKeyPressed += MaybeAddModelHandler;
 
-        await graphics.Work(cancellation);
+            //MakeTest();
 
-        window.OnKeyPressed -= HandleRotations;
-        window.OnKeyPressed -= MaybeAddModelHandler;
+            await _graphics.Work(cancellation);
 
-        void MaybeAddModelHandler(object s, KeyPressedEventArgs e) => MaybeAddModel(e, resourceFactory, graphics);
+            window.OnKeyPressed -= HandleRotations;
+            window.OnKeyPressed -= MaybeAddModelHandler;
+        }
 
         void MakeTest()
         {
@@ -57,77 +61,53 @@ internal sealed class GraphicsSandbox
         }
     }
 
-    private void MaybeAddModel(KeyPressedEventArgs keyPressedEventArgs, IResourceFactory resourceFactory, Graphics.Graphics graphics)
+    private void RestoreModels(Graphics.Graphics graphics, IResourceFactory resourceFactory)
     {
-        switch (keyPressedEventArgs.Input)
+        ConcurrentDictionary<int, ModelState> restored = new();
+        foreach (var modelState in _modelsState.Values)
         {
-            case "1":
-            {
-                var simpleCube = new SimpleCube(graphics.Device, resourceFactory);
-                _modelsState.TryAdd(simpleCube.GetHashCode(), CreateWithPosition());
-                simpleCube.RegisterWorldTransform(() => StandardTransformationMatrix(simpleCube.GetHashCode()));
-                graphics.AddDrawable(simpleCube);
-                break;
-            }
-            case "2":
-            {
-                var coloredCube = new ColoredCube(graphics.Device, resourceFactory);
-                _modelsState.TryAdd(coloredCube.GetHashCode(), CreateWithPosition());
-                coloredCube.RegisterWorldTransform(() => StandardTransformationMatrix(coloredCube.GetHashCode()));
-                graphics.AddDrawable(coloredCube);
-                break;
-            }
-            case "3":
-            {
-                var model = ModelLoader.LoadCube(graphics.Device, resourceFactory);
-                _modelsState.TryAdd(model.GetHashCode(), CreateWithPosition());
-                model.RegisterWorldTransform(() => StandardTransformationMatrix(model.GetHashCode()));
-                graphics.AddDrawable(model);
-                break;
-            }
-            case "4":
-            {
-                var model = ModelLoader.LoadSphere(graphics.Device, resourceFactory);
-                _modelsState.TryAdd(model.GetHashCode(), CreateWithPosition());
-                model.RegisterWorldTransform(() => StandardTransformationMatrix(model.GetHashCode()));
-                graphics.AddDrawable(model);
-                break;
-            }
-            case "5":
-            {
-                var plane = new Plane(graphics.Device, resourceFactory);
-                _modelsState.TryAdd(plane.GetHashCode(), CreateWithPosition());
-                plane.RegisterWorldTransform(() => StandardTransformationMatrix(plane.GetHashCode()));
-                graphics.AddDrawable(plane);
-                break;
-            }
-            case "6":
-            {
-                var plane = new SkinnedCube(graphics.Device, resourceFactory);
-                _modelsState.TryAdd(plane.GetHashCode(), CreateWithPosition());
-                plane.RegisterWorldTransform(() => StandardTransformationMatrix(plane.GetHashCode()));
-                graphics.AddDrawable(plane);
-                break;
-            }
-            case "7":
-            {
-                var model = ModelLoader.LoadSkinnedCube(graphics.Device, resourceFactory);
-                _modelsState.TryAdd(model.GetHashCode(), CreateWithPosition());
-                model.RegisterWorldTransform(() => StandardTransformationMatrix(model.GetHashCode()));
-                graphics.AddDrawable(model);
-                break;
-            }
+            var model = DrawableFactory.Create(modelState.DrawableKind, graphics.Device, resourceFactory);
+            restored[model.GetHashCode()] = modelState;
+            model.RegisterWorldTransform(() => StandardTransformationMatrix(model.GetHashCode()));
+            graphics.AddDrawable(model);
         }
+        _modelsState = restored;
     }
 
-    private static ModelState CreateWithPosition()
+    private void MaybeAddModelHandler(object s, KeyPressedEventArgs keyPressedEventArgs)
+    {
+        IResourceFactory resourceFactory = _resourceFactory;
+        var graphics = _graphics;
+
+        var kindMap = new Dictionary<string, DrawableKind>
+        {
+            { "1", DrawableKind.SimpleCube },
+            { "2", DrawableKind.ColoredCube },
+            { "3", DrawableKind.ColoredFromModelCube },
+            { "4", DrawableKind.ColoredSphere },
+            { "5", DrawableKind.Plane },
+            { "6", DrawableKind.SkinnedCube },
+            { "7", DrawableKind.SkinnedFromModelCube },
+        };
+
+        if (!kindMap.TryGetValue(keyPressedEventArgs.Input, out var drawableKind))
+        {
+            return;
+        }
+        var model = DrawableFactory.Create(drawableKind, graphics.Device, resourceFactory);
+        _modelsState[model.GetHashCode()] = CreateWithPosition(drawableKind);
+        model.RegisterWorldTransform(() => StandardTransformationMatrix(model.GetHashCode()));
+        graphics.AddDrawable(model);
+    }
+
+    private ModelState CreateWithPosition(DrawableKind kind)
     {
         const float modelRadius = 2;
         const float modelDepth = ZNear + (ZFar - ZNear) / 2;
 
         return RandomizePositionAndMovements ? MakeRandomPosition() : MakeCenterPosition();
 
-        ModelState MakeCenterPosition() => new(new Vector3(0, 0, modelDepth / 4), 0, 0, 0);
+        ModelState MakeCenterPosition() => new(kind, new Vector3(0, 0, modelDepth / 4), 0, 0, 0);
 
         ModelState MakeRandomPosition()
         {
@@ -139,13 +119,13 @@ internal sealed class GraphicsSandbox
             var position1 = new Vector3(x, y, modelDepth);
 
             var rotation = (float)Random.Shared.NextDouble(0, Math.PI * 2);
-            return new ModelState(position1, rotation, rotation, rotation);
+            return new ModelState(kind, position1, rotation, rotation, rotation);
         }
     }
 
     private Matrix StandardTransformationMatrix(int modelHash)
     {
-        var (position, rotX, rotY, rotZ) = _modelsState[modelHash];
+        var (_, position, rotX, rotY, rotZ) = _modelsState[modelHash];
         if (RandomizePositionAndMovements)
         {
             RandomizeCoordinates(modelHash);
@@ -154,7 +134,7 @@ internal sealed class GraphicsSandbox
             transformationMatrix *= Matrix.Translation(position.X, position.Y, 0);
             transformationMatrix *= Matrix.RotationYawPitchRoll(rotY, rotX, 0);
             transformationMatrix *= Matrix.Translation(0, 0, position.Z);
-            transformationMatrix *= ProjectionMatrix;
+            transformationMatrix *= _projectionMatrix;
             return transformationMatrix;
         }
         else
@@ -162,7 +142,7 @@ internal sealed class GraphicsSandbox
             var transformationMatrix = Matrix.Identity;
             transformationMatrix *= Matrix.RotationYawPitchRoll(rotY, rotX, rotZ);
             transformationMatrix *= Matrix.Translation(position.X, position.Y, position.Z);
-            transformationMatrix *= ProjectionMatrix;
+            transformationMatrix *= _projectionMatrix;
             return transformationMatrix;
         }
     }
@@ -245,5 +225,5 @@ internal sealed class GraphicsSandbox
         }
     }
 
-    private sealed record ModelState(Vector3 Position, float RotX, float RotY, float RotZ);
+    private sealed record ModelState(DrawableKind DrawableKind, Vector3 Position, float RotX, float RotY, float RotZ);
 }

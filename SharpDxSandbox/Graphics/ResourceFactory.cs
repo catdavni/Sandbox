@@ -32,7 +32,11 @@ internal sealed class ResourceFactory : IResourceFactory
     {
         foreach (var resource in _resources.Values)
         {
-            resource.Value.Dispose();
+            if (resource.IsValueCreated)
+            {
+                resource.Value.Dispose();
+            }
         }
+        _resources.Clear();
     }
 }
