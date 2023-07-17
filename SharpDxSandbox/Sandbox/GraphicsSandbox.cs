@@ -4,7 +4,6 @@ using SharpDX;
 using SharpDxSandbox.Graphics;
 using SharpDxSandbox.Graphics.Drawables;
 using SharpDxSandbox.Infrastructure;
-using SharpDxSandbox.Window;
 using Plane = SharpDxSandbox.Graphics.Drawables.Plane;
 
 namespace SharpDxSandbox.Sandbox;
@@ -25,20 +24,20 @@ internal sealed class GraphicsSandbox
 
     public Task Start() => new Infrastructure.Window(WindowWidth, WindowHeight).RunInWindow(Drawing);
 
-    private async Task Drawing(Infrastructure.Window window, WindowHandle windowHandle, CancellationToken cancellation)
+    private async Task Drawing(Infrastructure.Window window, CancellationToken cancellation)
     {
-        using var graphics = new Graphics.Graphics(window, windowHandle);
+        using var graphics = new Graphics.Graphics(window);
         using var resourceFactory = new ResourceFactory(graphics.Logger);
 
-        window.KeyPressed += HandleRotations;
-        window.KeyPressed += MaybeAddModelHandler;
+        window.OnKeyPressed += HandleRotations;
+        window.OnKeyPressed += MaybeAddModelHandler;
 
         //MakeTest();
 
         await graphics.Work(cancellation);
 
-        window.KeyPressed -= HandleRotations;
-        window.KeyPressed -= MaybeAddModelHandler;
+        window.OnKeyPressed -= HandleRotations;
+        window.OnKeyPressed -= MaybeAddModelHandler;
 
         void MaybeAddModelHandler(object s, KeyPressedEventArgs e) => MaybeAddModel(e, resourceFactory, graphics);
 

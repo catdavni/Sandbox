@@ -7,7 +7,6 @@ using SharpDX.Mathematics.Interop;
 using SharpDxSandbox.Graphics.Drawables;
 using SharpDxSandbox.Infrastructure;
 using SharpDxSandbox.Infrastructure.Disposables;
-using SharpDxSandbox.Window;
 
 namespace SharpDxSandbox.Graphics;
 
@@ -21,7 +20,7 @@ internal sealed class Graphics : IDisposable
     private readonly RenderTargetView _renderTargetView;
     private readonly SwapChain _swapChain;
 
-    public Graphics(Infrastructure.Window window, WindowHandle windowHandle)
+    public Graphics(Infrastructure.Window window)
     {
         _drawables = new();
         _disposable = new DisposableStack();
@@ -45,7 +44,7 @@ internal sealed class Graphics : IDisposable
                     IsWindowed = true,
                     ModeDescription = new ModeDescription
                         { Width = window.Width, Height = window.Height, Format = Format.R8G8B8A8_UNorm },
-                    OutputHandle = windowHandle.Value,
+                    OutputHandle = window.Handle,
                     SampleDescription = new SampleDescription(1, 0),
                     SwapEffect = SwapEffect.FlipSequential,
                     Usage = Usage.RenderTargetOutput,

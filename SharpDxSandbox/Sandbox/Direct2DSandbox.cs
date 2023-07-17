@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using SharpDX.Mathematics.Interop;
 using SharpDxSandbox.Infrastructure;
-using SharpDxSandbox.Window;
 using AlphaMode = SharpDX.Direct2D1.AlphaMode;
 
 namespace SharpDxSandbox.Sandbox;
@@ -12,7 +11,7 @@ public class Direct2DSandbox
     {
         await new Infrastructure.Window(600, 600).RunInWindow(Drawing);
 
-        Task Drawing(Infrastructure.Window window, WindowHandle windowHandle, CancellationToken cancellation)
+        Task Drawing(Infrastructure.Window window, CancellationToken cancellation)
             => Task.Run(() =>
                 {
                     using var d3d11device = new SharpDX.Direct3D11.Device(
@@ -35,7 +34,7 @@ public class Direct2DSandbox
                             BufferCount = 1,
                             SwapEffect = SharpDX.DXGI.SwapEffect.Discard
                         };
-                        using var swapChain = new SharpDX.DXGI.SwapChain1(dxgiFactory, d3d11device, windowHandle.Value, ref swapChainDescription);
+                        using var swapChain = new SharpDX.DXGI.SwapChain1(dxgiFactory, d3d11device, window.Handle, ref swapChainDescription);
 
                         using var backBuffer = swapChain.GetBackBuffer<SharpDX.DXGI.Surface>(0);
                         using var d2dFactory = new SharpDX.Direct2D1.Factory(
@@ -101,7 +100,7 @@ public class Direct2DSandbox
     {
         await new Infrastructure.Window(600, 400).RunInWindow(Drawing);
 
-        Task Drawing(Infrastructure.Window window, WindowHandle windowHandle, CancellationToken cancellation) =>
+        Task Drawing(Infrastructure.Window window, CancellationToken cancellation) =>
             Task.Run(
                 () =>
                 {
@@ -113,7 +112,7 @@ public class Direct2DSandbox
                             BufferCount = 1,
                             IsWindowed = true,
                             ModeDescription = new SharpDX.DXGI.ModeDescription(window.Width, window.Height, SharpDX.DXGI.Rational.Empty, SharpDX.DXGI.Format.B8G8R8A8_UNorm),
-                            OutputHandle = windowHandle.Value,
+                            OutputHandle = window.Handle,
                             SampleDescription = new SharpDX.DXGI.SampleDescription(1, 0),
                             SwapEffect = SharpDX.DXGI.SwapEffect.Discard,
                             Usage = SharpDX.DXGI.Usage.RenderTargetOutput

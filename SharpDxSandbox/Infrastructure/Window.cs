@@ -1,46 +1,181 @@
-﻿using SharpDxSandbox.Window;
+﻿using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
+using Vanara.Extensions;
+using Vanara.PInvoke;
+using static Vanara.PInvoke.User32;
 
-namespace SharpDxSandbox.Infrastructure
+namespace SharpDxSandbox.Infrastructure;
+
+internal sealed class Window : IDisposable
 {
-    internal sealed class Window
+    private const int XPosition = 200;
+    private const int YPosition = 200;
+    private const string WindowTitle = "Piu";
+    private const string WindowClassName = nameof(Window);
+    private readonly CancellationTokenSource _windowMessagePumpCancellation;
+    private readonly ConcurrentDictionary<string, WindowProcHandler> _windowProcedures;
+
+    public Window(int width, int height)
     {
-        public Window(int width, int height)
+        Width = width;
+        Height = height;
+        _windowMessagePumpCancellation = new CancellationTokenSource();
+        _windowProcedures = new();
+
+        Presentation = CreateWindow();
+        OnKeyPressed += (_, k) =>
         {
-            Width = width;
-            Height = height;
-        }
-
-        public event EventHandler<KeyPressedEventArgs> KeyPressed;
-
-        public int Width { get; }
-
-        public int Height { get; }
-
-        public async Task RunInWindow(Func<Window, WindowHandle, CancellationToken, Task> drawing)
-        {
-            using var window = new PresenterWindowLoop(Width, Height, WindowOptions.None);
-            window.KeyPressed += (s, eventArgs) =>
+            if (k.Input == "")
             {
-                KeyPressed?.Invoke(s, eventArgs);
-                Console.WriteLine(eventArgs.Input);
-            };
+                CloseWindow();
+            }
+        };
+    }
 
-            var windowHandle = window.GetWindowHandleAsync().Result;
+    public Task Presentation { get; }
 
-            using var drawingsCancellation = new CancellationTokenSource();
-            window.KeyPressed += HandleExit;
-            window.WindowClosed += (_, _) => { drawingsCancellation.Cancel(); };
+    public IntPtr Handle { get; private set; }
 
-            using var leakGuard = new MemoryLeakGuard(MemoryLeakGuard.LeakBehavior.ThrowException);
-            await drawing(this, windowHandle, drawingsCancellation.Token);
-            ;
-            void HandleExit(object sender, KeyPressedEventArgs e)
+    public int Width { get; private set; }
+
+    public int Height { get; private set; }
+
+    public event Action OnWindowSizeChanged;
+
+    public event EventHandler<KeyPressedEventArgs> OnKeyPressed;
+
+    public event EventHandler<EventArgs> OnWindowClosed;
+
+    public void RegisterWindowProcHandler(string purpose, Action<HWND, uint, IntPtr, IntPtr> handler)
+        => _windowProcedures[purpose] = WindowProcHandler.AsHandler(handler);
+
+    public void RegisterWindowProcInterceptor(string purpose, Func<HWND, uint, IntPtr, IntPtr, IntPtr> hook)
+        => _windowProcedures[purpose] = WindowProcHandler.AsInterceptor(hook);
+
+    public void CloseWindow() => _windowMessagePumpCancellation.Cancel();
+
+    private Task CreateWindow()
+    {
+        var waitWindowHandle = new TaskCompletionSource<IntPtr>();
+
+        var windowMessageLoop = Task.Factory.StartNew(() =>
             {
-                if (e.Input == "")
+                try
                 {
-                    drawingsCancellation.Cancel();
+                    var wndClass = new WNDCLASS
+                    {
+                        style = WindowClassStyles.CS_HREDRAW | WindowClassStyles.CS_VREDRAW,
+                        lpfnWndProc = MainWindowProcHandler,
+                        lpszClassName = WindowClassName,
+                    };
+                    Win32Error.ThrowLastErrorIfNull(Macros.MAKEINTATOM(RegisterClass(wndClass)));
+
+                    const WindowStyles windowStyle = WindowStyles.WS_OVERLAPPEDWINDOW | WindowStyles.WS_VISIBLE;
+
+                    var rect = new RECT(XPosition, YPosition, Width + XPosition, Height + YPosition);
+                    Win32Error.ThrowLastErrorIfFalse(AdjustWindowRect(ref rect, windowStyle, false));
+
+                    SetProcessDPIAware();
+                    var handle = Win32Error.ThrowLastErrorIfInvalid(CreateWindowEx(
+                        WindowStylesEx.WS_EX_OVERLAPPEDWINDOW,
+                        WindowClassName,
+                        WindowTitle,
+                        windowStyle,
+                        rect.X,
+                        rect.Y,
+                        rect.Width,
+                        rect.Height));
+                    waitWindowHandle.SetResult(handle.DangerousGetHandle());
                 }
+                catch (Exception ex)
+                {
+                    waitWindowHandle.SetException(ex);
+                }
+                
+                while (!_windowMessagePumpCancellation.IsCancellationRequested && PumpWindowMessages())
+                {
+                }
+
+                Win32Error.ThrowLastErrorIfFalse(DestroyWindow(Handle));
+                Win32Error.ThrowLastErrorIfFalse(UnregisterClass(WindowClassName, HINSTANCE.NULL));
+            },
+            _windowMessagePumpCancellation.Token,
+            TaskCreationOptions.LongRunning,
+            TaskScheduler.Default);
+
+        Handle = waitWindowHandle.Task.Result;
+        return windowMessageLoop;
+    }
+
+    private IntPtr MainWindowProcHandler(HWND hwnd, uint umsg, IntPtr wparam, IntPtr lparam)
+    {
+        foreach (var windowProcedure in _windowProcedures)
+        {
+            var result = windowProcedure.Value.Handler(hwnd, umsg, wparam, lparam);
+            if (windowProcedure.Value.IsInterceptor)
+            {
+                return result;
             }
         }
+
+        var message = umsg.ToEnum<WindowMessage>();
+        switch (message)
+        {
+            case WindowMessage.WM_CHAR:
+            {
+                OnKeyPressed?.Invoke(this, new(char.ConvertFromUtf32((char)wparam)));
+                break;
+            }
+            case WindowMessage.WM_SIZING:
+            {
+                var newSize = Marshal.PtrToStructure<RECT>(lparam);
+                Width = newSize.Width;
+                Height = newSize.Height;
+                OnWindowSizeChanged?.Invoke();
+                break;
+            }
+            case WindowMessage.WM_DESTROY:
+            {
+                OnWindowClosed?.Invoke(this, EventArgs.Empty);
+                break;
+            }
+        }
+
+        return DefWindowProc(hwnd, umsg, wparam, lparam);
+    }
+
+    private bool PumpWindowMessages()
+    {
+        while (PeekMessage(out var msg, Handle, 0, 0, PM.PM_REMOVE))
+        {
+            TranslateMessage(in msg);
+            DispatchMessage(in msg);
+
+            if (msg.message.ToEnum<WindowMessage>() == WindowMessage.WM_QUIT)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void Dispose()
+    {
+        _windowMessagePumpCancellation.Cancel();
+        Presentation.Wait();
+    }
+
+    private sealed record WindowProcHandler(Func<HWND, uint, IntPtr, IntPtr, IntPtr> Handler, bool IsInterceptor)
+    {
+        public static WindowProcHandler AsInterceptor(Func<HWND, uint, IntPtr, IntPtr, IntPtr> hook)
+            => new(hook, true);
+
+        public static WindowProcHandler AsHandler(Action<HWND, uint, IntPtr, IntPtr> handler)
+            => new((h, m, w, l) =>
+                {
+                    handler(h, m, w, l);
+                    return IntPtr.Zero;
+                },
+                false);
     }
 }

@@ -9,7 +9,6 @@ using SharpDxSandbox.Graphics;
 using SharpDxSandbox.Graphics.Drawables;
 using SharpDxSandbox.Infrastructure;
 using SharpDxSandbox.Resources;
-using SharpDxSandbox.Window;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Device = SharpDX.Direct3D11.Device;
 
@@ -21,7 +20,7 @@ public static class Direct3DSandbox
     {
         await new Infrastructure.Window(1024, 768).RunInWindow(Drawing);
 
-        Task Drawing(Infrastructure.Window window, WindowHandle windowHandle, CancellationToken cancellation)
+        Task Drawing(Infrastructure.Window window, CancellationToken cancellation)
         {
             // create device and swapchain
             // create vertex type
@@ -45,7 +44,7 @@ public static class Direct3DSandbox
                     var thetaY = (float)Math.PI / 4; 
                     var positionZ = initialZ + 0.2f;
 
-                    window.KeyPressed += (s, e) =>
+                    window.OnKeyPressed += (s, e) =>
                     {
                         switch (e.Input.ToLower().First())
                         {
@@ -88,7 +87,7 @@ public static class Direct3DSandbox
                                 IsWindowed = true,
                                 ModeDescription = new ModeDescription
                                     { Width = window.Width, Height = window.Height, Format = Format.R8G8B8A8_UNorm },
-                                OutputHandle = windowHandle.Value,
+                                OutputHandle = window.Handle,
                                 SampleDescription = new SampleDescription(1, 0),
                                 SwapEffect = SwapEffect.FlipSequential,
                                 Usage = Usage.RenderTargetOutput,
@@ -281,7 +280,7 @@ public static class Direct3DSandbox
     {
         await new Infrastructure.Window(600, 400).RunInWindow(Drawing);
 
-        Task Drawing(Infrastructure.Window window, WindowHandle windowHandle, CancellationToken cancellation)
+        Task Drawing(Infrastructure.Window window, CancellationToken cancellation)
         {
             return Task.Run(() =>
                 {
@@ -293,7 +292,7 @@ public static class Direct3DSandbox
                             BufferCount = 2,
                             IsWindowed = true,
                             ModeDescription = new ModeDescription(window.Width, window.Height, Rational.Empty, Format.R8G8B8A8_UNorm),
-                            OutputHandle = windowHandle.Value,
+                            OutputHandle = window.Handle,
                             SampleDescription = new SampleDescription(1, 0),
                             SwapEffect = SwapEffect.FlipSequential,
                             Usage = Usage.RenderTargetOutput
