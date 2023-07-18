@@ -28,6 +28,7 @@ internal sealed class Graphics : IDisposable
         {
             Device = new SharpDX.Direct3D11.Device(DriverType.Hardware, DeviceCreationFlags.Debug).DisposeWith(_disposable);
             Logger = new DeviceLogger(Device).DisposeWith(_disposable);
+            Gui = new GuiManager(Device, window).DisposeWith(_disposable);
 
             var dxgiDevice = Device.QueryInterface<SharpDX.DXGI.Device>().DisposeWith(_disposable);
             var adapter = dxgiDevice.Adapter.DisposeWith(_disposable);
@@ -87,11 +88,15 @@ internal sealed class Graphics : IDisposable
         }
     }
 
+    public GuiManager Gui { get; }
+
     public DeviceLogger Logger { get; }
 
     public SharpDX.Direct3D11.Device Device { get; }
 
     public void AddDrawable(IDrawable drawable) => _drawables.Enqueue(drawable);
+
+    public void ClearDrawables() => _drawables.Clear();
 
     public Task Work(CancellationToken token)
     {
@@ -108,6 +113,8 @@ internal sealed class Graphics : IDisposable
                     {
                         drawPipelineMetadata = drawable.Draw(drawPipelineMetadata, Device);
                     }
+
+                    Gui.Draw();
 
                     if (_swapChain.Present(1, PresentFlags.None).Failure)
                     {

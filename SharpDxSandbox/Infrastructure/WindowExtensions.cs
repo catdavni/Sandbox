@@ -4,12 +4,15 @@ internal static class WindowExtensions
 {
     public static async Task RunInWindow(this Window window, Func<Window, CancellationToken, Task> drawing)
     {
-        using var leakGuard = new MemoryLeakGuard(MemoryLeakGuard.LeakBehavior.ThrowException);
-        window.OnKeyPressed += (s, eventArgs) => Console.WriteLine(eventArgs.Input);
+        using (window)
+        {
+            using var leakGuard = new MemoryLeakGuard(MemoryLeakGuard.LeakBehavior.ThrowException);
+            window.OnKeyPressed += (s, eventArgs) => Console.WriteLine(eventArgs.Input);
 
-        using var restartOnResizeDrawing = new RestartDrawingOnResize(window, drawing);
-        await restartOnResizeDrawing.Drawing;
-        await window.Presentation;
+            using var restartOnResizeDrawing = new RestartDrawingOnResize(window, drawing);
+            await restartOnResizeDrawing.Drawing;
+            await window.Presentation;
+        }
     }
 }
 

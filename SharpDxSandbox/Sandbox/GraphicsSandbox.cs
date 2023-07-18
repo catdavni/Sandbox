@@ -9,10 +9,8 @@ namespace SharpDxSandbox.Sandbox;
 
 internal sealed class GraphicsSandbox
 {
-    private const bool RandomizePositionAndMovements = false;
-
     private const float ZNear = 1;
-    private const float ZFar = 70;
+    private const float ZFar = 200;
 
     private Matrix _projectionMatrix;
     private BoundingFrustum _frustum;
@@ -34,31 +32,37 @@ internal sealed class GraphicsSandbox
         {
             RestoreModels(_graphics, _resourceFactory);
 
+            _graphics.Gui.ClearElementsRequested += ClearElements;
+            _graphics.Gui.GenerateManyElementsRequested += GenerateMany;
             window.OnKeyPressed += HandleRotations;
             window.OnKeyPressed += MaybeAddModelHandler;
 
-            //MakeTest();
-
             await _graphics.Work(cancellation);
 
+            _graphics.Gui.ClearElementsRequested -= ClearElements;
+            _graphics.Gui.GenerateManyElementsRequested -= GenerateMany;
             window.OnKeyPressed -= HandleRotations;
             window.OnKeyPressed -= MaybeAddModelHandler;
         }
+    }
 
-        void MakeTest()
+    private void GenerateMany(object sender, EventArgs e)
+    {
+        const int count = 3000;
+        //const int count = 1;
+        var start = Stopwatch.GetTimestamp();
+        for (var i = 0; i < count; i++)
         {
-            const int count = 3000;
-            //const int count = 1;
-            var start = Stopwatch.GetTimestamp();
-            for (var i = 0; i < count; i++)
-            {
-                //MaybeAddModelHandler(this, new KeyPressedEventArgs("3"));
-                //MaybeAddModelHandler(this, new KeyPressedEventArgs("7"));
-                MaybeAddModelHandler(this, new KeyPressedEventArgs((i % 8).ToString()));
-            }
-            var elapsed = Stopwatch.GetElapsedTime(start);
-            Trace.WriteLine($"{count} elements was loaded in {elapsed.TotalSeconds}s");
+            MaybeAddModelHandler(this, new KeyPressedEventArgs((i % 8).ToString()));
         }
+        var elapsed = Stopwatch.GetElapsedTime(start);
+        Trace.WriteLine($"{count} elements was loaded in {elapsed.TotalSeconds}s");
+    }
+
+    private void ClearElements(object sender, EventArgs e)
+    {
+        _modelsState.Clear();
+        _graphics.ClearDrawables();
     }
 
     private void RestoreModels(Graphics.Graphics graphics, IResourceFactory resourceFactory)
@@ -105,7 +109,7 @@ internal sealed class GraphicsSandbox
         const float modelRadius = 2;
         const float modelDepth = ZNear + (ZFar - ZNear) / 2;
 
-        return RandomizePositionAndMovements ? MakeRandomPosition() : MakeCenterPosition();
+        return _graphics.Gui.RandomizeMovements ? MakeRandomPosition() : MakeCenterPosition();
 
         ModelState MakeCenterPosition() => new(kind, new Vector3(0, 0, modelDepth / 4), 0, 0, 0);
 
@@ -126,22 +130,35 @@ internal sealed class GraphicsSandbox
     private Matrix StandardTransformationMatrix(int modelHash)
     {
         var (_, position, rotX, rotY, rotZ) = _modelsState[modelHash];
-        if (RandomizePositionAndMovements)
+        rotX += _graphics.Gui.XRotation;
+        rotY -= _graphics.Gui.YRotation;
+        rotZ -= _graphics.Gui.ZRotation;
+        var transX = position.X + _graphics.Gui.XTranslation;
+        var transY = position.Y + _graphics.Gui.YTranslation;
+        var transZ = position.Z + _graphics.Gui.ZTranslation;
+
+        _modelsState[modelHash] = _modelsState[modelHash] with
+        {
+            RotX = rotX, RotY = rotY, RotZ = rotZ
+        };
+
+        if (_graphics.Gui.RandomizeMovements)
         {
             RandomizeCoordinates(modelHash);
             var transformationMatrix = Matrix.Identity;
             transformationMatrix *= Matrix.RotationYawPitchRoll(rotY, rotX, rotZ);
-            transformationMatrix *= Matrix.Translation(position.X, position.Y, 0);
+            transformationMatrix *= Matrix.Translation(transX, transY, 0);
             transformationMatrix *= Matrix.RotationYawPitchRoll(rotY, rotX, 0);
-            transformationMatrix *= Matrix.Translation(0, 0, position.Z);
+            transformationMatrix *= Matrix.Translation(0, 0, transZ);
             transformationMatrix *= _projectionMatrix;
+
             return transformationMatrix;
         }
         else
         {
             var transformationMatrix = Matrix.Identity;
             transformationMatrix *= Matrix.RotationYawPitchRoll(rotY, rotX, rotZ);
-            transformationMatrix *= Matrix.Translation(position.X, position.Y, position.Z);
+            transformationMatrix *= Matrix.Translation(transX, transY, transZ);
             transformationMatrix *= _projectionMatrix;
             return transformationMatrix;
         }

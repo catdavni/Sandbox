@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.Runtime.InteropServices;
 using Vanara.Extensions;
 using Vanara.PInvoke;
 using static Vanara.PInvoke.User32;
@@ -81,6 +80,7 @@ internal sealed class Window : IDisposable
                     Win32Error.ThrowLastErrorIfFalse(AdjustWindowRect(ref rect, windowStyle, false));
 
                     SetProcessDPIAware();
+
                     var handle = Win32Error.ThrowLastErrorIfInvalid(CreateWindowEx(
                         WindowStylesEx.WS_EX_OVERLAPPEDWINDOW,
                         WindowClassName,
@@ -101,7 +101,11 @@ internal sealed class Window : IDisposable
                 {
                 }
 
-                Win32Error.ThrowLastErrorIfFalse(DestroyWindow(Handle));
+                // request to close window by token and not by WM_Destroy
+                if (_windowMessagePumpCancellation.IsCancellationRequested)
+                {
+                    Win32Error.ThrowLastErrorIfFalse(DestroyWindow(Handle));
+                }
                 Win32Error.ThrowLastErrorIfFalse(UnregisterClass(WindowClassName, HINSTANCE.NULL));
             },
             _windowMessagePumpCancellation.Token,
@@ -142,16 +146,16 @@ internal sealed class Window : IDisposable
             case WindowMessage.WM_DESTROY:
             {
                 OnWindowClosed?.Invoke(this, EventArgs.Empty);
+                PostQuitMessage();
                 break;
             }
         }
-
         return DefWindowProc(hwnd, umsg, wparam, lparam);
     }
 
     private bool PumpWindowMessages()
     {
-        while (PeekMessage(out var msg, Handle, 0, 0, PM.PM_REMOVE))
+        while (PeekMessage(out var msg, IntPtr.Zero, 0, 0, PM.PM_REMOVE))
         {
             TranslateMessage(in msg);
             DispatchMessage(in msg);
@@ -167,6 +171,7 @@ internal sealed class Window : IDisposable
     public void Dispose()
     {
         _windowMessagePumpCancellation.Cancel();
+        _windowMessagePumpCancellation.Dispose();
         Presentation.Wait();
     }
 
