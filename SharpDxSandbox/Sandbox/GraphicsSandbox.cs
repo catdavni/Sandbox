@@ -4,6 +4,7 @@ using SharpDX;
 using SharpDxSandbox.Graphics;
 using SharpDxSandbox.Graphics.Drawables;
 using SharpDxSandbox.Infrastructure;
+using Vanara.PInvoke;
 
 namespace SharpDxSandbox.Sandbox;
 
@@ -16,9 +17,11 @@ internal sealed class GraphicsSandbox
     private BoundingFrustum _frustum;
 
     private ConcurrentDictionary<int, ModelState> _modelsState = new();
+    private readonly CameraView _cameraView = new();
 
     private Graphics.Graphics _graphics;
     private ResourceFactory _resourceFactory;
+    private GuiManager _gui;
 
     public Task Start() => new Window(2048, 1512).RunInWindow(Drawing);
 
@@ -28,41 +31,47 @@ internal sealed class GraphicsSandbox
         _frustum = new BoundingFrustum(_projectionMatrix);
 
         using (_graphics = new Graphics.Graphics(window))
+        using (_gui = new GuiManager(_graphics.Device, window))
         using (_resourceFactory = new ResourceFactory(_graphics.Logger))
         {
+            _graphics.WithGui(_gui);
             RestoreModels(_graphics, _resourceFactory);
 
-            _graphics.Gui.ClearElementsRequested += ClearElements;
-            _graphics.Gui.GenerateManyElementsRequested += GenerateMany;
-            window.OnKeyPressed += HandleRotations;
-            window.OnKeyPressed += MaybeAddModelHandler;
+            window.OnKeyDown += UpdateCamera;
+            _graphics.OnEndFrame += HandleGuiCalls;
+            window.OnCharKeyPressed += MaybeAddModelHandler;
 
             await _graphics.Work(cancellation);
 
-            _graphics.Gui.ClearElementsRequested -= ClearElements;
-            _graphics.Gui.GenerateManyElementsRequested -= GenerateMany;
-            window.OnKeyPressed -= HandleRotations;
-            window.OnKeyPressed -= MaybeAddModelHandler;
+            window.OnKeyDown -= UpdateCamera;
+            _graphics.OnEndFrame -= HandleGuiCalls;
+            window.OnCharKeyPressed -= MaybeAddModelHandler;
         }
     }
 
-    private void GenerateMany(object sender, EventArgs e)
+    private void UpdateCamera(object sender, User32.VK e)
     {
-        const int count = 3000;
-        //const int count = 1;
-        var start = Stopwatch.GetTimestamp();
-        for (var i = 0; i < count; i++)
+        switch (e)
         {
-            MaybeAddModelHandler(this, new KeyPressedEventArgs((i % 8).ToString()));
+            case User32.VK.VK_A:
+                _cameraView.Update(left: true);
+                break;
+            case User32.VK.VK_D:
+                _cameraView.Update(right: true);
+                break;
+            case User32.VK.VK_W:
+                _cameraView.Update(forward: true);
+                break;
+            case User32.VK.VK_S:
+                _cameraView.Update(backward: true);
+                break;
+            case User32.VK.VK_OEM_1:
+                _cameraView.Update(rotateLeft: true);
+                break;
+            case User32.VK.VK_OEM_5:
+                _cameraView.Update(rotateRight: true);
+                break;
         }
-        var elapsed = Stopwatch.GetElapsedTime(start);
-        Trace.WriteLine($"{count} elements was loaded in {elapsed.TotalSeconds}s");
-    }
-
-    private void ClearElements(object sender, EventArgs e)
-    {
-        _modelsState.Clear();
-        _graphics.ClearDrawables();
     }
 
     private void RestoreModels(Graphics.Graphics graphics, IResourceFactory resourceFactory)
@@ -78,7 +87,7 @@ internal sealed class GraphicsSandbox
         _modelsState = restored;
     }
 
-    private void MaybeAddModelHandler(object s, KeyPressedEventArgs keyPressedEventArgs)
+    private void MaybeAddModelHandler(object s, string key)
     {
         IResourceFactory resourceFactory = _resourceFactory;
         var graphics = _graphics;
@@ -94,7 +103,7 @@ internal sealed class GraphicsSandbox
             { "7", DrawableKind.SkinnedFromModelCube },
         };
 
-        if (!kindMap.TryGetValue(keyPressedEventArgs.Input, out var drawableKind))
+        if (!kindMap.TryGetValue(key, out var drawableKind))
         {
             return;
         }
@@ -107,20 +116,33 @@ internal sealed class GraphicsSandbox
     private ModelState CreateWithPosition(DrawableKind kind)
     {
         const float modelRadius = 2;
-        const float modelDepth = ZNear + (ZFar - ZNear) / 2;
+        const float visibleNear = ZNear + modelRadius * 4;
+        const float visibleFar = ZFar - modelRadius * 4;
 
-        return _graphics.Gui.RandomizeMovements ? MakeRandomPosition() : MakeCenterPosition();
+        return _gui.CreateInRandomPosition ? MakeRandomPosition() : MakeCenterPosition();
 
-        ModelState MakeCenterPosition() => new(kind, new Vector3(0, 0, modelDepth / 4), 0, 0, 0);
+        ModelState MakeCenterPosition() => new(kind, new Vector3(0, 0, visibleNear), 0, 0, 0);
 
         ModelState MakeRandomPosition()
         {
-            var middleHeight = _frustum.GetHeightAtDepth(modelDepth) / 2 - modelRadius;
-            var middleWidth = _frustum.GetWidthAtDepth(modelDepth) / 2 - modelRadius;
+            var emptySphereCenter = visibleNear + (visibleFar - visibleNear) / 2;
+            var emptySphereDiameter = modelRadius * 8;
+            var emptySphereRadius = emptySphereDiameter / 2;
 
-            var x = (float)Random.Shared.NextDouble(middleWidth / 2, middleWidth);
+            var randomFarZ = (float)Random.Shared.NextDouble(emptySphereCenter + emptySphereRadius, visibleFar);
+            Debug.Assert(emptySphereCenter + emptySphereRadius < visibleFar, "emptySphereCenter + emptySphereRadius < ZFar");
+            var randomNearZ = (float)Random.Shared.NextDouble(visibleNear, emptySphereCenter - emptySphereRadius);
+            Debug.Assert(visibleNear < emptySphereCenter - emptySphereRadius, "ZNear < emptySphereCenter - emptySphereRadius");
+
+            var z = Random.Shared.Next(0, 1) == 0 ? randomNearZ : randomFarZ;
+
+            var middleHeight = _frustum.GetHeightAtDepth(z) / 2 - modelRadius;
+            var middleWidth = _frustum.GetWidthAtDepth(z) / 2 - modelRadius;
+
+            var x = (float)Random.Shared.NextDouble(-middleWidth, middleWidth);
+
             var y = (float)Random.Shared.NextDouble(-middleHeight, middleHeight);
-            var position1 = new Vector3(x, y, modelDepth);
+            var position1 = new Vector3(x, y, z);
 
             var rotation = (float)Random.Shared.NextDouble(0, Math.PI * 2);
             return new ModelState(kind, position1, rotation, rotation, rotation);
@@ -130,38 +152,60 @@ internal sealed class GraphicsSandbox
     private Matrix StandardTransformationMatrix(int modelHash)
     {
         var (_, position, rotX, rotY, rotZ) = _modelsState[modelHash];
-        rotX += _graphics.Gui.XRotation;
-        rotY -= _graphics.Gui.YRotation;
-        rotZ -= _graphics.Gui.ZRotation;
-        var transX = position.X + _graphics.Gui.XTranslation;
-        var transY = position.Y + _graphics.Gui.YTranslation;
-        var transZ = position.Z + _graphics.Gui.ZTranslation;
+        rotX += _gui.ModelRotation.X;
+        rotY -= _gui.ModelRotation.Y;
+        rotZ -= _gui.ModelRotation.Z;
+        var transX = position.X + _gui.ModelTranslation.X;
+        var transY = position.Y + _gui.ModelTranslation.Y;
+        var transZ = position.Z + _gui.ModelTranslation.Z;
 
-        _modelsState[modelHash] = _modelsState[modelHash] with
-        {
-            RotX = rotX, RotY = rotY, RotZ = rotZ
-        };
 
-        if (_graphics.Gui.RandomizeMovements)
+        var transformationMatrix = Matrix.Identity;
+        transformationMatrix *= Matrix.RotationYawPitchRoll(rotY, rotX, rotZ);
+        transformationMatrix *= Matrix.Translation(transX, transY, transZ);
+
+        if (_gui.WithMovements)
         {
             RandomizeCoordinates(modelHash);
-            var transformationMatrix = Matrix.Identity;
-            transformationMatrix *= Matrix.RotationYawPitchRoll(rotY, rotX, rotZ);
-            transformationMatrix *= Matrix.Translation(transX, transY, 0);
+            transformationMatrix *= Matrix.Translation(0, 0, -transZ);
             transformationMatrix *= Matrix.RotationYawPitchRoll(rotY, rotX, 0);
             transformationMatrix *= Matrix.Translation(0, 0, transZ);
-            transformationMatrix *= _projectionMatrix;
+        }
+        
+        var (cameraPosition, cameraDirection) = _cameraView.GetCameraData();
+        _gui.PrintInfo($"Camera position: {cameraPosition.ToString("F2")}");
+        var cameraView = Matrix.LookAtLH(cameraPosition, cameraDirection, Vector3.UnitY);
+        transformationMatrix *= cameraView;
 
-            return transformationMatrix;
-        }
-        else
+        transformationMatrix *= _projectionMatrix;
+        return transformationMatrix;
+    }
+
+    private void HandleGuiCalls(object sender, EventArgs e)
+    {
+        if (_gui.ClearElementsRequested)
         {
-            var transformationMatrix = Matrix.Identity;
-            transformationMatrix *= Matrix.RotationYawPitchRoll(rotY, rotX, rotZ);
-            transformationMatrix *= Matrix.Translation(transX, transY, transZ);
-            transformationMatrix *= _projectionMatrix;
-            return transformationMatrix;
+            _modelsState.Clear();
+            _graphics.ClearDrawables();
         }
+
+        if (_gui.GenerateManyElementsRequested)
+        {
+            GenerateMany();
+        }
+    }
+
+    private void GenerateMany()
+    {
+        const int count = 3000;
+        //const int count = 1;
+        var start = Stopwatch.GetTimestamp();
+        for (var i = 0; i < count; i++)
+        {
+            MaybeAddModelHandler(this, (i % 8).ToString());
+        }
+        var elapsed = Stopwatch.GetElapsedTime(start);
+        Trace.WriteLine($"{count} elements was loaded in {elapsed.TotalSeconds}s");
     }
 
     private void RandomizeCoordinates(int modelKey)
@@ -173,74 +217,62 @@ internal sealed class GraphicsSandbox
         _modelsState[modelKey] = model with { RotY = (float)rotY };
     }
 
-    private void HandleRotations(object sender, KeyPressedEventArgs e)
+    private sealed record ModelState(DrawableKind DrawableKind, Vector3 Position, float RotX, float RotY, float RotZ);
+
+    private class CameraView
     {
-        switch (e.Input.ToLower().First())
+        private const float MovementSpeed = 0.001f;
+        private const float RotationSpeed = 0.00007f;
+        private const float RotationDivider = 2f * (float)Math.PI;
+
+        private Vector3 _cameraPosition = new(0, 0, 0);
+
+        private float _rotationAngle;
+        private float _goRight;
+        private float _goForward;
+
+        public (Vector3 Position, Vector3 Direction) GetCameraData()
         {
-            // Rotation X
-            case 'w':
-                foreach (var model in _modelsState.Keys)
-                {
-                    var value = _modelsState[model];
-                    _modelsState[model] = value with { RotX = (value.RotX + 0.1f) % (float)(2f * Math.PI) };
-                }
-                break;
-            case 's':
-                foreach (var model in _modelsState.Keys)
-                {
-                    var value = _modelsState[model];
-                    _modelsState[model] = value with { RotX = (value.RotX - 0.1f) % (float)(2f * Math.PI) };
-                }
-                break;
-            // Rotation Y
-            case 'd':
-                foreach (var model in _modelsState.Keys)
-                {
-                    var value = _modelsState[model];
-                    _modelsState[model] = value with { RotY = (value.RotY - 0.1f) % (float)(2f * Math.PI) };
-                }
-                break;
-            case 'a':
-                foreach (var model in _modelsState.Keys)
-                {
-                    var value = _modelsState[model];
-                    _modelsState[model] = value with { RotY = (value.RotY + 0.1f) % (float)(2f * Math.PI) };
-                }
-                break;
-            // Rotation Z
-            case 'e':
-                foreach (var model in _modelsState.Keys)
-                {
-                    var value = _modelsState[model];
-                    _modelsState[model] = value with { RotZ = (value.RotZ + 0.1f) % (float)(2f * Math.PI) };
-                }
-                break;
-            case 'q':
-                foreach (var model in _modelsState.Keys)
-                {
-                    var value = _modelsState[model];
-                    _modelsState[model] = value with { RotZ = (value.RotZ - 0.1f) % (float)(2f * Math.PI) };
-                }
-                break;
-            // Translation Z
-            case 'f':
-                foreach (var model in _modelsState.Keys)
-                {
-                    var value = _modelsState[model];
-                    value = value with { Position = Vector3.Add(value.Position, new Vector3(0, 0, 0.3f)) };
-                    _modelsState[model] = value;
-                }
-                break;
-            case 'r':
-                foreach (var model in _modelsState.Keys)
-                {
-                    var value = _modelsState[model];
-                    value = value with { Position = Vector3.Add(value.Position, new Vector3(0, 0, -0.3f)) };
-                    _modelsState[model] = value;
-                }
-                break;
+            var cameraDirection = Vector3.TransformNormal(Vector3.UnitZ, Matrix.RotationY(_rotationAngle));
+            var rightDirection = Vector3.TransformNormal(Vector3.UnitX, Matrix.RotationY(_rotationAngle));
+            _cameraPosition += cameraDirection * _goForward;
+            _cameraPosition += rightDirection * _goRight;
+
+            _goForward = 0f;
+            _goRight = 0f;
+
+            return (_cameraPosition, _cameraPosition + cameraDirection);
+        }
+
+        public void Update(bool left = false, bool right = false, bool forward = false, bool backward = false, bool rotateRight = false, bool rotateLeft = false)
+        {
+            if (rotateRight)
+            {
+                _rotationAngle = (_rotationAngle + RotationSpeed) % RotationDivider;
+            }
+
+            if (rotateLeft)
+            {
+                _rotationAngle = (_rotationAngle - RotationSpeed) % RotationDivider;
+            }
+
+            if (forward)
+            {
+                _goForward += MovementSpeed;
+            }
+            if (backward)
+            {
+                _goForward -= MovementSpeed;
+            }
+
+            if (right)
+            {
+                _goRight += MovementSpeed;
+            }
+            if (left)
+            {
+                _goRight -= MovementSpeed;
+            }
         }
     }
-
-    private sealed record ModelState(DrawableKind DrawableKind, Vector3 Position, float RotX, float RotY, float RotZ);
 }

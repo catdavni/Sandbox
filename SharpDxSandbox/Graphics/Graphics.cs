@@ -18,6 +18,7 @@ internal sealed class Graphics : IDisposable
     private readonly DepthStencilView _depthStencilView;
     private readonly RenderTargetView _renderTargetView;
     private readonly SwapChain _swapChain;
+    private GuiManager _gui;
 
     public Graphics(Window window)
     {
@@ -28,7 +29,6 @@ internal sealed class Graphics : IDisposable
         {
             Device = new SharpDX.Direct3D11.Device(DriverType.Hardware, DeviceCreationFlags.Debug).DisposeWith(_disposable);
             Logger = new DeviceLogger(Device).DisposeWith(_disposable);
-            Gui = new GuiManager(Device, window).DisposeWith(_disposable);
 
             var dxgiDevice = Device.QueryInterface<SharpDX.DXGI.Device>().DisposeWith(_disposable);
             var adapter = dxgiDevice.Adapter.DisposeWith(_disposable);
@@ -88,11 +88,13 @@ internal sealed class Graphics : IDisposable
         }
     }
 
-    public GuiManager Gui { get; }
+    public event EventHandler<EventArgs> OnEndFrame;
 
     public DeviceLogger Logger { get; }
 
     public SharpDX.Direct3D11.Device Device { get; }
+
+    public void WithGui(GuiManager gui) => _gui = gui;
 
     public void AddDrawable(IDrawable drawable) => _drawables.Enqueue(drawable);
 
@@ -114,12 +116,14 @@ internal sealed class Graphics : IDisposable
                         drawPipelineMetadata = drawable.Draw(drawPipelineMetadata, Device);
                     }
 
-                    Gui.Draw();
+                    _gui?.Draw();
 
                     if (_swapChain.Present(1, PresentFlags.None).Failure)
                     {
                         Logger.FlushMessages();
                     }
+
+                    OnEndFrame?.Invoke(this, EventArgs.Empty);
                 }
             },
             token);

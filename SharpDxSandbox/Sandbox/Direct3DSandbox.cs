@@ -44,9 +44,9 @@ public static class Direct3DSandbox
                     var thetaY = (float)Math.PI / 4; 
                     var positionZ = initialZ + 0.2f;
 
-                    window.OnKeyPressed += (s, e) =>
+                    window.OnCharKeyPressed += (s, e) =>
                     {
-                        switch (e.Input.ToLower().First())
+                        switch (e.ToLower().First())
                         {
                             case 'w':
                                 thetaX += 0.1f;

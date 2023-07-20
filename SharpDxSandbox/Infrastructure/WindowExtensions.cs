@@ -7,7 +7,7 @@ internal static class WindowExtensions
         using (window)
         {
             using var leakGuard = new MemoryLeakGuard(MemoryLeakGuard.LeakBehavior.ThrowException);
-            window.OnKeyPressed += (s, eventArgs) => Console.WriteLine(eventArgs.Input);
+            window.OnCharKeyPressed += (s, key) => Console.WriteLine(key);
 
             using var restartOnResizeDrawing = new RestartDrawingOnResize(window, drawing);
             await restartOnResizeDrawing.Drawing;

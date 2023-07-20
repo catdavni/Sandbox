@@ -22,9 +22,9 @@ internal sealed class Window : IDisposable
         _windowProcedures = new();
 
         Presentation = CreateWindow();
-        OnKeyPressed += (_, k) =>
+        OnCharKeyPressed += (_, k) =>
         {
-            if (k.Input == "")
+            if (k == "")
             {
                 CloseWindow();
             }
@@ -41,7 +41,9 @@ internal sealed class Window : IDisposable
 
     public event EventHandler<EventArgs> OnWindowSizeChanged;
 
-    public event EventHandler<KeyPressedEventArgs> OnKeyPressed;
+    public event EventHandler<string> OnCharKeyPressed;
+
+    public event EventHandler<VK> OnKeyDown;
 
     public event EventHandler<EventArgs> OnWindowClosed;
 
@@ -99,6 +101,7 @@ internal sealed class Window : IDisposable
 
                 while (!_windowMessagePumpCancellation.IsCancellationRequested && PumpWindowMessages())
                 {
+                    RaiseKeyDowns();
                 }
 
                 // request to close window by token and not by WM_Destroy
@@ -114,25 +117,52 @@ internal sealed class Window : IDisposable
 
         Handle = waitWindowHandle.Task.Result;
         return windowMessageLoop;
+
+        static bool PumpWindowMessages()
+        {
+            while (PeekMessage(out var msg, IntPtr.Zero, 0, 0, PM.PM_REMOVE))
+            {
+                TranslateMessage(in msg);
+                DispatchMessage(in msg);
+
+                if (msg.message.ToEnum<WindowMessage>() == WindowMessage.WM_QUIT)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        void RaiseKeyDowns()
+        {
+            foreach (var vk in Enum.GetValues<VK>())
+            {
+                if (GetAsyncKeyState((int)vk) != 0)
+                {
+                    //Console.WriteLine(vk);
+                    OnKeyDown?.Invoke(this, vk);
+                }
+            }
+        }
     }
 
-    private IntPtr MainWindowProcHandler(HWND hwnd, uint umsg, IntPtr wparam, IntPtr lparam)
+    private IntPtr MainWindowProcHandler(HWND hwnd, uint msg, IntPtr wparam, IntPtr lparam)
     {
         foreach (var windowProcedure in _windowProcedures)
         {
-            var result = windowProcedure.Value.Handler(hwnd, umsg, wparam, lparam);
+            var result = windowProcedure.Value.Handler(hwnd, msg, wparam, lparam);
             if (windowProcedure.Value.IsInterceptor)
             {
                 return result;
             }
         }
 
-        var message = umsg.ToEnum<WindowMessage>();
+        var message = msg.ToEnum<WindowMessage>();
         switch (message)
         {
             case WindowMessage.WM_CHAR:
             {
-                OnKeyPressed?.Invoke(this, new(char.ConvertFromUtf32((char)wparam)));
+                OnCharKeyPressed?.Invoke(this, new(char.ConvertFromUtf32((char)wparam)));
                 break;
             }
             case WindowMessage.WM_SIZE:
@@ -150,22 +180,7 @@ internal sealed class Window : IDisposable
                 break;
             }
         }
-        return DefWindowProc(hwnd, umsg, wparam, lparam);
-    }
-
-    private bool PumpWindowMessages()
-    {
-        while (PeekMessage(out var msg, IntPtr.Zero, 0, 0, PM.PM_REMOVE))
-        {
-            TranslateMessage(in msg);
-            DispatchMessage(in msg);
-
-            if (msg.message.ToEnum<WindowMessage>() == WindowMessage.WM_QUIT)
-            {
-                return false;
-            }
-        }
-        return true;
+        return DefWindowProc(hwnd, msg, wparam, lparam);
     }
 
     public void Dispose()
