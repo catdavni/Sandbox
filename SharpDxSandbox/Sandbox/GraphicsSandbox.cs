@@ -13,6 +13,8 @@ internal sealed class GraphicsSandbox
     private const float ZNear = 1;
     private const float ZFar = 200;
 
+    private float _movementZRotation;
+
     private Matrix _projectionMatrix;
     private BoundingFrustum _frustum;
 
@@ -39,12 +41,14 @@ internal sealed class GraphicsSandbox
 
             window.OnKeyDown += UpdateCamera;
             _graphics.OnEndFrame += HandleGuiCalls;
+            _graphics.OnEndFrame += RotateIfRequested;
             window.OnCharKeyPressed += MaybeAddModelHandler;
 
             await _graphics.Work(cancellation);
 
             window.OnKeyDown -= UpdateCamera;
             _graphics.OnEndFrame -= HandleGuiCalls;
+            _graphics.OnEndFrame -= RotateIfRequested;
             window.OnCharKeyPressed -= MaybeAddModelHandler;
         }
     }
@@ -125,24 +129,20 @@ internal sealed class GraphicsSandbox
 
         ModelState MakeRandomPosition()
         {
-            var emptySphereCenter = visibleNear + (visibleFar - visibleNear) / 2;
-            var emptySphereDiameter = modelRadius * 8;
-            var emptySphereRadius = emptySphereDiameter / 2;
+            const float emptySphereDiameter = modelRadius * 6;
+            const float emptySphereRadius = emptySphereDiameter / 2;
 
-            var randomFarZ = (float)Random.Shared.NextDouble(emptySphereCenter + emptySphereRadius, visibleFar);
-            Debug.Assert(emptySphereCenter + emptySphereRadius < visibleFar, "emptySphereCenter + emptySphereRadius < ZFar");
-            var randomNearZ = (float)Random.Shared.NextDouble(visibleNear, emptySphereCenter - emptySphereRadius);
-            Debug.Assert(visibleNear < emptySphereCenter - emptySphereRadius, "ZNear < emptySphereCenter - emptySphereRadius");
-
-            var z = Random.Shared.Next(0, 1) == 0 ? randomNearZ : randomFarZ;
-
+            var z = (float)Random.Shared.NextDouble(visibleNear, visibleFar);
+            
             var middleHeight = _frustum.GetHeightAtDepth(z) / 2 - modelRadius;
             var middleWidth = _frustum.GetWidthAtDepth(z) / 2 - modelRadius;
+            var maxVisibleSphereRadius = Math.Min(middleHeight, middleWidth);
 
-            var x = (float)Random.Shared.NextDouble(-middleWidth, middleWidth);
+            var randomX = (float)Random.Shared.NextDouble(emptySphereRadius, maxVisibleSphereRadius);
+            var randomY = (float)Random.Shared.NextDouble(emptySphereRadius, maxVisibleSphereRadius);
+            var randomXY = new Vector3(randomX, randomY, z);
 
-            var y = (float)Random.Shared.NextDouble(-middleHeight, middleHeight);
-            var position1 = new Vector3(x, y, z);
+            var position1 =  Vector3.TransformCoordinate(randomXY, Matrix.RotationZ((float)Random.Shared.NextDouble(0, 2 * Math.PI)));
 
             var rotation = (float)Random.Shared.NextDouble(0, Math.PI * 2);
             return new ModelState(kind, position1, rotation, rotation, rotation);
@@ -159,19 +159,12 @@ internal sealed class GraphicsSandbox
         var transY = position.Y + _gui.ModelTranslation.Y;
         var transZ = position.Z + _gui.ModelTranslation.Z;
 
-
         var transformationMatrix = Matrix.Identity;
-        transformationMatrix *= Matrix.RotationYawPitchRoll(rotY, rotX, rotZ);
+        transformationMatrix *= Matrix.RotationYawPitchRoll(rotY + _movementZRotation, rotX + _movementZRotation, rotZ);
         transformationMatrix *= Matrix.Translation(transX, transY, transZ);
 
-        if (_gui.WithMovements)
-        {
-            RandomizeCoordinates(modelHash);
-            transformationMatrix *= Matrix.Translation(0, 0, -transZ);
-            transformationMatrix *= Matrix.RotationYawPitchRoll(rotY, rotX, 0);
-            transformationMatrix *= Matrix.Translation(0, 0, transZ);
-        }
-        
+        transformationMatrix *= Matrix.RotationYawPitchRoll(0, 0, _movementZRotation);
+
         var (cameraPosition, cameraDirection) = _cameraView.GetCameraData();
         _gui.PrintInfo($"Camera position: {cameraPosition.ToString("F2")}");
         var cameraView = Matrix.LookAtLH(cameraPosition, cameraDirection, Vector3.UnitY);
@@ -179,6 +172,17 @@ internal sealed class GraphicsSandbox
 
         transformationMatrix *= _projectionMatrix;
         return transformationMatrix;
+    }
+
+    private void RotateIfRequested(object sender, EventArgs e)
+    {
+        if (!_gui.WithMovements)
+        {
+            return;
+        }
+        const float stepForward = 0.002f;
+        const float divider = (float)(2 * Math.PI);
+        _movementZRotation = (_movementZRotation - stepForward) % divider;
     }
 
     private void HandleGuiCalls(object sender, EventArgs e)
@@ -206,15 +210,6 @@ internal sealed class GraphicsSandbox
         }
         var elapsed = Stopwatch.GetElapsedTime(start);
         Trace.WriteLine($"{count} elements was loaded in {elapsed.TotalSeconds}s");
-    }
-
-    private void RandomizeCoordinates(int modelKey)
-    {
-        const float stepForward = 0.01f;
-        var model = _modelsState[modelKey];
-        const double divider = (2 * Math.PI);
-        var rotY = (model.RotY + stepForward) % divider;
-        _modelsState[modelKey] = model with { RotY = (float)rotY };
     }
 
     private sealed record ModelState(DrawableKind DrawableKind, Vector3 Position, float RotX, float RotY, float RotZ);
