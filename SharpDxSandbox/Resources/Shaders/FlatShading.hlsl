@@ -49,5 +49,5 @@ float4 PShader(float4 position : SV_POSITION, float2 texCoord: TexCoord, float l
 {
     // float4 texData = tex.Sample(samplerState, texCoord) * lightAmount;
     // return texData;
-    return float4(1.0f, 1.0f, 1.0f, 1.0f) * lightAmount;
+    return float4(1.0f, 0.0f, 0.0f, 1.0f) * lightAmount;
 }

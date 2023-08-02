@@ -13,11 +13,16 @@ internal sealed class GraphicsSandbox
     private const float ZNear = 1;
     private const float ZFar = 200;
 
+    private const float ModelRadius = 2;
+    private const float VisibleNear = ZNear + ModelRadius * 4;
+    private const float VisibleFar = ZFar - ModelRadius * 4;
+
     private float _movementZRotation;
 
     private Matrix _projectionMatrix;
     private BoundingFrustum _frustum;
-    private Vector4 _lightPosition = new(0,0,0,0);
+
+    private Vector4 _lightSourcePosition;
 
     private ConcurrentDictionary<int, ModelState> _modelsState = new();
     private readonly CameraView _cameraView = new();
@@ -39,6 +44,7 @@ internal sealed class GraphicsSandbox
         {
             _graphics.WithGui(_gui);
             RestoreModels();
+            CreateLightSource();
 
             window.OnKeyDown += UpdateCamera;
             _graphics.OnEndFrame += HandleGuiCalls;
@@ -50,6 +56,25 @@ internal sealed class GraphicsSandbox
             _graphics.OnEndFrame -= HandleGuiCalls;
             _graphics.OnEndFrame -= RotateIfRequested;
         }
+    }
+
+    private void CreateLightSource()
+    {
+        var model = DrawableFactory.Create(DrawableKind.LightSource, _graphics.Device, _resourceFactory);
+        model.RegisterWorldTransform(() =>
+        {
+            _lightSourcePosition = new Vector4(_gui.LightSourcePosition.X, _gui.LightSourcePosition.Y, VisibleNear / 2 + _gui.LightSourcePosition.Z, 1);
+            var model = Matrix.Scaling(0.1f);
+            var world = Matrix.Translation(_lightSourcePosition.X, _lightSourcePosition.Y, _lightSourcePosition.Z);
+
+            var (cameraPosition, cameraDirection) = _cameraView.GetCameraData();
+            _gui.PrintInfo($"Camera position: {cameraPosition.ToString("F2")}");
+            var camera = Matrix.LookAtLH(cameraPosition, cameraDirection, Vector3.UnitY);
+
+            var projection = _projectionMatrix;
+            return new Transforms(model, world, camera, projection);
+        });
+        _graphics.AddDrawable(model);
     }
 
     private void UpdateCamera(object sender, User32.VK e)
@@ -95,30 +120,26 @@ internal sealed class GraphicsSandbox
         model.RegisterWorldTransform(() => StandardTransformationMatrix(model.GetHashCode()));
         if (model is INeedLightSourceDrawable lightPowered)
         {
-            lightPowered.RegisterLightSource(() => _lightPosition);
+            lightPowered.RegisterLightSource(() => _lightSourcePosition);
         }
         _graphics.AddDrawable(model);
     }
 
     private ModelState CreateWithPosition(DrawableKind kind)
     {
-        const float modelRadius = 2;
-        const float visibleNear = ZNear + modelRadius * 4;
-        const float visibleFar = ZFar - modelRadius * 4;
-
         return _gui.CreateInRandomPosition ? MakeRandomPosition() : MakeCenterPosition();
 
-        ModelState MakeCenterPosition() => new(kind, new Vector3(0, 0, visibleNear), 0, 0, 0);
+        ModelState MakeCenterPosition() => new(kind, new Vector3(0, 0, VisibleNear), 0, 0, 0);
 
         ModelState MakeRandomPosition()
         {
-            const float emptySphereDiameter = modelRadius * 6;
+            const float emptySphereDiameter = ModelRadius * 6;
             const float emptySphereRadius = emptySphereDiameter / 2;
 
-            var z = (float)Random.Shared.NextDouble(visibleNear, visibleFar);
+            var z = (float)Random.Shared.NextDouble(VisibleNear, VisibleFar);
 
-            var middleHeight = _frustum.GetHeightAtDepth(z) / 2 - modelRadius;
-            var middleWidth = _frustum.GetWidthAtDepth(z) / 2 - modelRadius;
+            var middleHeight = _frustum.GetHeightAtDepth(z) / 2 - ModelRadius;
+            var middleWidth = _frustum.GetWidthAtDepth(z) / 2 - ModelRadius;
             var maxVisibleSphereRadius = Math.Min(middleHeight, middleWidth);
 
             var randomX = (float)Random.Shared.NextDouble(emptySphereRadius, maxVisibleSphereRadius);
@@ -170,6 +191,7 @@ internal sealed class GraphicsSandbox
         {
             _modelsState.Clear();
             _graphics.ClearDrawables();
+            CreateLightSource();
         }
 
         if (_gui.GenerateManyElementsRequested)

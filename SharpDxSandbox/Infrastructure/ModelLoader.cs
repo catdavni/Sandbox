@@ -14,10 +14,25 @@ internal static class ModelLoader
     private static readonly Dictionary<string, Scene> SceneCache = new();
 
     public static FromModel LoadCube(Device device, IResourceFactory resourceFactory)
-        => MakeFromModel(device, resourceFactory, "cube.obj");
+    {
+        const string modelName = "cube.obj";
+        var (vertices, indices) = LoadModel(resourceFactory, modelName);
+        return new FromModel(device, resourceFactory, vertices, indices, modelName);
+    }
 
     public static FromModel LoadSphere(Device device, IResourceFactory resourceFactory)
-        => MakeFromModel(device, resourceFactory, "sphere.obj");
+    {
+        const string modelName = "sphere.obj";
+        var (vertices, indices) = LoadModel(resourceFactory, modelName);
+        return new FromModel(device, resourceFactory, vertices, indices, modelName);
+    }
+
+    public static LightSource LoadLightSource(Device device, IResourceFactory resourceFactory)
+    {
+        const string modelName = "sphere.obj";
+        var (vertices, indices) = LoadModel(resourceFactory, modelName);
+        return new LightSource(device, resourceFactory, vertices, indices, nameof(LightSource));
+    }
 
     public static IDrawable LoadSkinnedCube(Device device, IResourceFactory resourceFactory)
     {
@@ -35,13 +50,13 @@ internal static class ModelLoader
         return new SkinnedFromModel(device, resourceFactory, vertices, indices, modelName);
     }
 
-    private static FromModel MakeFromModel(Device device, IResourceFactory resourceFactory, string modelName)
+    private static (RawVector3[] Vertices, int[] Indices) LoadModel(IResourceFactory resourceFactory, string modelName)
     {
         var scene = EnsureScene(resourceFactory, modelName);
         var mesh = scene.Meshes[0];
         var indices = mesh.GetIndices();
         var vertices = mesh.Vertices.Select(v => new RawVector3(v.X, v.Y, v.Z)).ToArray();
-        return new FromModel(device, resourceFactory, vertices, indices, modelName);
+        return (vertices, indices);
     }
 
     private static Scene EnsureScene(IResourceFactory resourceFactory, string modelName)

@@ -67,6 +67,8 @@ internal sealed class GuiManager : GuiState, IDisposable
 
             DrawModelRotation();
 
+            DrawLightSourcePosition();
+
             DrawObjectManagement();
 
             DrawObjectFactory();
@@ -114,6 +116,15 @@ internal sealed class GuiManager : GuiState, IDisposable
         {
             InitRotations();
         }
+        ImGui.NewLine();
+    }
+    
+    private void DrawLightSourcePosition()
+    {
+        ImGui.Text("LightSource");
+        ImGui.SliderFloat("X l", ref XLightPosition.Value, XLightPosition.Min, XLightPosition.Max);
+        ImGui.SliderFloat("Y l", ref YLightPosition.Value, YLightPosition.Min, YLightPosition.Max);
+        ImGui.SliderFloat("Z l", ref ZLightPosition.Value, ZLightPosition.Min, ZLightPosition.Max);
         ImGui.NewLine();
     }
 
