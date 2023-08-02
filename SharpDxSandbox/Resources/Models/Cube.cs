@@ -1,4 +1,5 @@
-﻿using SharpDX.Mathematics.Interop;
+﻿using SharpDX;
+using SharpDX.Mathematics.Interop;
 using SharpDxSandbox.Graphics.Drawables;
 
 namespace SharpDxSandbox.Resources.Models;
@@ -38,7 +39,7 @@ public static class Cube
     public static class Skinned
     {
         public static readonly (string Key, VertexWithTexCoord[] Data) Vertices =
-            ("CubeVertices_B0C7231A-6B29-4576-A6FE-A1D4439316AA", new[]
+            ($"{nameof(Skinned)}CubeVertices_B0C7231A-6B29-4576-A6FE-A1D4439316AA", new[]
             {
                 new VertexWithTexCoord(new RawVector3(-1f, -1f, -1f), new RawVector2(0, 1)), // front bottom left
                 new VertexWithTexCoord(new RawVector3(-1f, 1f, -1f), new RawVector2(0, 0)), // front top left
@@ -71,6 +72,57 @@ public static class Cube
 
                 8, 9, 10, 8, 10, 11, // top
                 12, 13, 14, 12, 14, 15 // bottom
+            });
+    }
+
+    public static class Shaded
+    {
+        public static readonly (string Key, Vertex_Normal_TexCoord[] Data) Vertices =
+            ($"{nameof(Shaded)}CubeVertices_DAC4FD15-A9D8-4216-8989-6DAC634F84AB", new[]
+            {
+                // 0
+                new Vertex_Normal_TexCoord(new RawVector3(-1f, -1f, -1f), -Vector3.UnitZ, new RawVector2(0, 1)), // front bottom left
+                new Vertex_Normal_TexCoord(new RawVector3(-1f, 1f, -1f), -Vector3.UnitZ, new RawVector2(0, 0)), // front top left
+                new Vertex_Normal_TexCoord(new RawVector3(1f, 1f, -1f), -Vector3.UnitZ, new RawVector2(1, 0)), // front top right
+                new Vertex_Normal_TexCoord(new RawVector3(1f, -1f, -1f), -Vector3.UnitZ, new RawVector2(1, 1)), // front bottom right
+                // 4
+                new Vertex_Normal_TexCoord(new RawVector3(-1f, -1f, 1f), Vector3.UnitZ, new RawVector2(1, 1)), // back bottom left
+                new Vertex_Normal_TexCoord(new RawVector3(-1f, 1f, 1f), Vector3.UnitZ, new RawVector2(1, 0)), // back top left
+                new Vertex_Normal_TexCoord(new RawVector3(1f, 1f, 1f), Vector3.UnitZ, new RawVector2(0, 0)), // back top right
+                new Vertex_Normal_TexCoord(new RawVector3(1f, -1f, 1f), Vector3.UnitZ, new RawVector2(0, 1)), // back bottom right
+                // 8
+                new Vertex_Normal_TexCoord(new RawVector3(-1f, 1f, -1f), Vector3.UnitY, new RawVector2(0, 1)), // top bottom left
+                new Vertex_Normal_TexCoord(new RawVector3(-1f, 1f, 1f), Vector3.UnitY, new RawVector2(0, 0)), // top top left
+                new Vertex_Normal_TexCoord(new RawVector3(1f, 1f, 1f), Vector3.UnitY, new RawVector2(1, 0)), // top top right
+                new Vertex_Normal_TexCoord(new RawVector3(1f, 1f, -1f), Vector3.UnitY, new RawVector2(1, 1)), // top bottom right
+                // 12
+                new Vertex_Normal_TexCoord(new RawVector3(-1f, -1f, 1f), -Vector3.UnitY, new RawVector2(0, 1)), // bottom bottom left
+                new Vertex_Normal_TexCoord(new RawVector3(-1f, -1f, -1f), -Vector3.UnitY, new RawVector2(0, 0)), // bottom top left
+                new Vertex_Normal_TexCoord(new RawVector3(1f, -1f, -1f), -Vector3.UnitY, new RawVector2(1, 0)), // bottom top right
+                new Vertex_Normal_TexCoord(new RawVector3(1f, -1f, 1f), -Vector3.UnitY, new RawVector2(1, 1)), // bottom bottom right
+                // 16
+                new Vertex_Normal_TexCoord(new RawVector3(-1f, -1f, 1f), -Vector3.UnitX, new RawVector2(0, 1)), // left bottom left
+                new Vertex_Normal_TexCoord(new RawVector3(-1f, 1f, 1f), -Vector3.UnitX, new RawVector2(0, 0)), // left top left
+                new Vertex_Normal_TexCoord(new RawVector3(-1f, 1f, -1f), -Vector3.UnitX, new RawVector2(1, 0)), // left top right
+                new Vertex_Normal_TexCoord(new RawVector3(-1f, -1f, -1f), -Vector3.UnitX, new RawVector2(1, 1)), // left bottom right
+                // 20
+                new Vertex_Normal_TexCoord(new RawVector3(1f, -1f, -1f), Vector3.UnitX, new RawVector2(0, 1)), // right bottom left
+                new Vertex_Normal_TexCoord(new RawVector3(1f, 1f, -1f), Vector3.UnitX, new RawVector2(0, 0)), // right top left
+                new Vertex_Normal_TexCoord(new RawVector3(1f, 1f, 1f), Vector3.UnitX, new RawVector2(1, 0)), // right top right
+                new Vertex_Normal_TexCoord(new RawVector3(1f, -1f, 1f), Vector3.UnitX, new RawVector2(1, 1)), // right bottom right
+            });
+
+        public static readonly (string Key, int[] Data) TriangleIndices =
+            ("CubeTriangleIndices_9EF152B5-227E-4FB3-827E-4F2EE568252C", new[]
+            {
+                0, 1, 2, 3, 0, 2, // front
+                4, 7, 6, 4, 6, 5, // back
+
+                8, 9, 10, 8, 10, 11, // top
+                12, 13, 14, 12, 14, 15, // bottom
+
+                16, 17, 18, 16, 18, 19, // left
+                20, 21, 22, 20, 22, 23, // right
             });
     }
 

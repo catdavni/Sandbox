@@ -21,7 +21,7 @@ internal static class ResourceFactoryExtensions
             () =>
             {
                 var path = Path.Combine(ShadersPath, shaderFileName);
-                using var vertexShaderBytes = ShaderBytecode.CompileFromFile(path, entryPoint, "vs_4_0");
+                using var vertexShaderBytes = ShaderBytecode.CompileFromFile(path, entryPoint, "vs_4_0", ShaderFlags.Debug | ShaderFlags.DebugNameForSource);
                 var shader = new VertexShader(device, vertexShaderBytes.Bytecode);
                 return new CompiledVertexShader(shader, vertexShaderBytes.Bytecode);
             });
@@ -67,14 +67,14 @@ internal static class ResourceFactoryExtensions
                     Marshal.SizeOf<T>());
             });
 
-    public static Func<Buffer> EnsureUpdateTransformMatrix(this IResourceFactory factory, Device device, string key, Func<Matrix> transform) =>
+    public static Func<Buffer> EnsureUpdateBuffer<T>(this IResourceFactory factory, Device device, string key, Func<T> transform) where T : struct =>
         () =>
         {
             var transformMatrix = transform();
             var transformMatrixBuffer = factory.EnsureBuffer(
                 device,
                 key,
-                transformMatrix.ToArray(),
+                new[] { transformMatrix },
                 BindFlags.ConstantBuffer,
                 ResourceUsage.Dynamic,
                 CpuAccessFlags.Write);

@@ -17,6 +17,7 @@ internal sealed class GraphicsSandbox
 
     private Matrix _projectionMatrix;
     private BoundingFrustum _frustum;
+    private Vector4 _lightPosition = new(0,0,0,0);
 
     private ConcurrentDictionary<int, ModelState> _modelsState = new();
     private readonly CameraView _cameraView = new();
@@ -37,19 +38,17 @@ internal sealed class GraphicsSandbox
         using (_resourceFactory = new ResourceFactory(_graphics.Logger))
         {
             _graphics.WithGui(_gui);
-            RestoreModels(_graphics, _resourceFactory);
+            RestoreModels();
 
             window.OnKeyDown += UpdateCamera;
             _graphics.OnEndFrame += HandleGuiCalls;
             _graphics.OnEndFrame += RotateIfRequested;
-            window.OnCharKeyPressed += MaybeAddModelHandler;
 
             await _graphics.Work(cancellation);
 
             window.OnKeyDown -= UpdateCamera;
             _graphics.OnEndFrame -= HandleGuiCalls;
             _graphics.OnEndFrame -= RotateIfRequested;
-            window.OnCharKeyPressed -= MaybeAddModelHandler;
         }
     }
 
@@ -78,43 +77,27 @@ internal sealed class GraphicsSandbox
         }
     }
 
-    private void RestoreModels(Graphics.Graphics graphics, IResourceFactory resourceFactory)
+    private void RestoreModels()
     {
         ConcurrentDictionary<int, ModelState> restored = new();
         foreach (var modelState in _modelsState.Values)
         {
-            var model = DrawableFactory.Create(modelState.DrawableKind, graphics.Device, resourceFactory);
-            restored[model.GetHashCode()] = modelState;
-            model.RegisterWorldTransform(() => StandardTransformationMatrix(model.GetHashCode()));
-            graphics.AddDrawable(model);
+            CreateModel(modelState.DrawableKind, restored, modelState);
         }
         _modelsState = restored;
     }
 
-    private void MaybeAddModelHandler(object s, string key)
+    private void CreateModel(DrawableKind drawableKind, ConcurrentDictionary<int, ModelState> stateStorage = null, ModelState restoreState = null)
     {
-        IResourceFactory resourceFactory = _resourceFactory;
-        var graphics = _graphics;
-
-        var kindMap = new Dictionary<string, DrawableKind>
-        {
-            { "1", DrawableKind.SimpleCube },
-            { "2", DrawableKind.ColoredCube },
-            { "3", DrawableKind.ColoredFromModelCube },
-            { "4", DrawableKind.ColoredSphere },
-            { "5", DrawableKind.Plane },
-            { "6", DrawableKind.SkinnedCube },
-            { "7", DrawableKind.SkinnedFromModelCube },
-        };
-
-        if (!kindMap.TryGetValue(key, out var drawableKind))
-        {
-            return;
-        }
-        var model = DrawableFactory.Create(drawableKind, graphics.Device, resourceFactory);
-        _modelsState[model.GetHashCode()] = CreateWithPosition(drawableKind);
+        stateStorage ??= _modelsState;
+        var model = DrawableFactory.Create(drawableKind, _graphics.Device, _resourceFactory);
+        stateStorage[model.GetHashCode()] = restoreState ?? CreateWithPosition(drawableKind);
         model.RegisterWorldTransform(() => StandardTransformationMatrix(model.GetHashCode()));
-        graphics.AddDrawable(model);
+        if (model is INeedLightSourceDrawable lightPowered)
+        {
+            lightPowered.RegisterLightSource(() => _lightPosition);
+        }
+        _graphics.AddDrawable(model);
     }
 
     private ModelState CreateWithPosition(DrawableKind kind)
@@ -133,7 +116,7 @@ internal sealed class GraphicsSandbox
             const float emptySphereRadius = emptySphereDiameter / 2;
 
             var z = (float)Random.Shared.NextDouble(visibleNear, visibleFar);
-            
+
             var middleHeight = _frustum.GetHeightAtDepth(z) / 2 - modelRadius;
             var middleWidth = _frustum.GetWidthAtDepth(z) / 2 - modelRadius;
             var maxVisibleSphereRadius = Math.Min(middleHeight, middleWidth);
@@ -142,14 +125,14 @@ internal sealed class GraphicsSandbox
             var randomY = (float)Random.Shared.NextDouble(emptySphereRadius, maxVisibleSphereRadius);
             var randomXY = new Vector3(randomX, randomY, z);
 
-            var position1 =  Vector3.TransformCoordinate(randomXY, Matrix.RotationZ((float)Random.Shared.NextDouble(0, 2 * Math.PI)));
+            var position1 = Vector3.TransformCoordinate(randomXY, Matrix.RotationZ((float)Random.Shared.NextDouble(0, 2 * Math.PI)));
 
             var rotation = (float)Random.Shared.NextDouble(0, Math.PI * 2);
             return new ModelState(kind, position1, rotation, rotation, rotation);
         }
     }
 
-    private Matrix StandardTransformationMatrix(int modelHash)
+    private Transforms StandardTransformationMatrix(int modelHash)
     {
         var (_, position, rotX, rotY, rotZ) = _modelsState[modelHash];
         rotX += _gui.ModelRotation.X;
@@ -159,19 +142,15 @@ internal sealed class GraphicsSandbox
         var transY = position.Y + _gui.ModelTranslation.Y;
         var transZ = position.Z + _gui.ModelTranslation.Z;
 
-        var transformationMatrix = Matrix.Identity;
-        transformationMatrix *= Matrix.RotationYawPitchRoll(rotY + _movementZRotation, rotX + _movementZRotation, rotZ);
-        transformationMatrix *= Matrix.Translation(transX, transY, transZ);
-
-        transformationMatrix *= Matrix.RotationYawPitchRoll(0, 0, _movementZRotation);
+        var model = Matrix.RotationYawPitchRoll(rotY + _movementZRotation, rotX + _movementZRotation, rotZ);
+        var world = Matrix.Translation(transX, transY, transZ) * Matrix.RotationYawPitchRoll(0, 0, _movementZRotation);
 
         var (cameraPosition, cameraDirection) = _cameraView.GetCameraData();
         _gui.PrintInfo($"Camera position: {cameraPosition.ToString("F2")}");
-        var cameraView = Matrix.LookAtLH(cameraPosition, cameraDirection, Vector3.UnitY);
-        transformationMatrix *= cameraView;
+        var camera = Matrix.LookAtLH(cameraPosition, cameraDirection, Vector3.UnitY);
 
-        transformationMatrix *= _projectionMatrix;
-        return transformationMatrix;
+        var projection = _projectionMatrix;
+        return new Transforms(model, world, camera, projection);
     }
 
     private void RotateIfRequested(object sender, EventArgs e)
@@ -197,77 +176,61 @@ internal sealed class GraphicsSandbox
         {
             GenerateMany();
         }
+
+        HandleObjectCreation();
+
+        void HandleObjectCreation()
+        {
+            if (_gui.CreateSimpleObjectRequest.SimpleCube)
+            {
+                CreateModel(DrawableKind.SimpleCube);
+            }
+            if (_gui.CreateSimpleObjectRequest.ColoredCube)
+            {
+                CreateModel(DrawableKind.ColoredCube);
+            }
+            if (_gui.CreateSimpleObjectRequest.ColoredFromModelFile)
+            {
+                CreateModel(DrawableKind.ColoredFromModelCube);
+            }
+            if (_gui.CreateSimpleObjectRequest.ColoredSphere)
+            {
+                CreateModel(DrawableKind.ColoredSphere);
+            }
+
+            if (_gui.CreateSkinnedObjectRequest.Plane)
+            {
+                CreateModel(DrawableKind.Plane);
+            }
+            if (_gui.CreateSkinnedObjectRequest.SkinnedCube)
+            {
+                CreateModel(DrawableKind.SkinnedCube);
+            }
+            if (_gui.CreateSkinnedObjectRequest.SkinnedCubeFromModelFile)
+            {
+                CreateModel(DrawableKind.SkinnedFromModelCube);
+            }
+            if (_gui.CreateShadedObjectRequest.ShadedSkinnedCube)
+            {
+                CreateModel(DrawableKind.ShadedSkinnedCube);
+            }
+        }
     }
 
     private void GenerateMany()
     {
         const int count = 3000;
         //const int count = 1;
+        var availableDrawables = Enum.GetValues<DrawableKind>();
         var start = Stopwatch.GetTimestamp();
         for (var i = 0; i < count; i++)
         {
-            MaybeAddModelHandler(this, (i % 8).ToString());
+            CreateModel(DrawableKind.ShadedSkinnedCube);
+            //CreateModel(availableDrawables[i % availableDrawables.Length]);
         }
         var elapsed = Stopwatch.GetElapsedTime(start);
         Trace.WriteLine($"{count} elements was loaded in {elapsed.TotalSeconds}s");
     }
 
     private sealed record ModelState(DrawableKind DrawableKind, Vector3 Position, float RotX, float RotY, float RotZ);
-
-    private class CameraView
-    {
-        private const float MovementSpeed = 0.001f;
-        private const float RotationSpeed = 0.00007f;
-        private const float RotationDivider = 2f * (float)Math.PI;
-
-        private Vector3 _cameraPosition = new(0, 0, 0);
-
-        private float _rotationAngle;
-        private float _goRight;
-        private float _goForward;
-
-        public (Vector3 Position, Vector3 Direction) GetCameraData()
-        {
-            var cameraDirection = Vector3.TransformNormal(Vector3.UnitZ, Matrix.RotationY(_rotationAngle));
-            var rightDirection = Vector3.TransformNormal(Vector3.UnitX, Matrix.RotationY(_rotationAngle));
-            _cameraPosition += cameraDirection * _goForward;
-            _cameraPosition += rightDirection * _goRight;
-
-            _goForward = 0f;
-            _goRight = 0f;
-
-            return (_cameraPosition, _cameraPosition + cameraDirection);
-        }
-
-        public void Update(bool left = false, bool right = false, bool forward = false, bool backward = false, bool rotateRight = false, bool rotateLeft = false)
-        {
-            if (rotateRight)
-            {
-                _rotationAngle = (_rotationAngle + RotationSpeed) % RotationDivider;
-            }
-
-            if (rotateLeft)
-            {
-                _rotationAngle = (_rotationAngle - RotationSpeed) % RotationDivider;
-            }
-
-            if (forward)
-            {
-                _goForward += MovementSpeed;
-            }
-            if (backward)
-            {
-                _goForward -= MovementSpeed;
-            }
-
-            if (right)
-            {
-                _goRight += MovementSpeed;
-            }
-            if (left)
-            {
-                _goRight -= MovementSpeed;
-            }
-        }
-    }
 }

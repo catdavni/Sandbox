@@ -1,4 +1,5 @@
 ﻿using ConcurrentCollections;
+using ImGuiNET;
 using SharpDX.Direct3D11;
 using SharpDxSandbox.Infrastructure;
 using Vanara.PInvoke;
@@ -60,33 +61,25 @@ internal sealed class GuiManager : GuiState, IDisposable
     {
         if (ImGui.Begin("Controls"))
         {
-            ImGui.Text($"Frame time: {TimeSpan.FromSeconds(1).TotalMilliseconds / ImGui.GetIO().Framerate:F2}ms/frame ({ImGui.GetIO().Framerate:F1} FPS)");
-            ImGui.NewLine();
+            DrawFpsInfo();
 
             DrawModelTranslation();
-            ImGui.NewLine();
 
             DrawModelRotation();
-            ImGui.NewLine();
 
-            ImGui.Checkbox("Move objects", ref _withMovements);
-            ImGui.SameLine();
-            ImGui.Checkbox("Create in random position", ref _createInRandomPosition);
-            ImGui.NewLine();
+            DrawObjectManagement();
 
-            ClearElementsRequested = ImGui.Button("Clear elements");
-            ImGui.SameLine();
-            GenerateManyElementsRequested = ImGui.Button("Generate random");
-            ImGui.NewLine();
+            DrawObjectFactory();
 
-            ImGui.Text("Info:");
-            foreach (var i in _info)
-            {
-                ImGui.Text(i);
-            }
-            _info.Clear();
+            DrawInfoLog();
         }
         ImGui.End();
+    }
+
+    private static void DrawFpsInfo()
+    {
+        ImGui.Text($"Frame time: {TimeSpan.FromSeconds(1).TotalMilliseconds / ImGui.GetIO().Framerate:F2}ms/frame ({ImGui.GetIO().Framerate:F1} FPS)");
+        ImGui.NewLine();
     }
 
     private void DrawModelTranslation()
@@ -95,6 +88,20 @@ internal sealed class GuiManager : GuiState, IDisposable
         ImGui.SliderFloat("X mt", ref XModelTranslation.Value, XModelTranslation.Min, XModelTranslation.Max);
         ImGui.SliderFloat("Y mt", ref YModelTranslation.Value, YModelTranslation.Min, YModelTranslation.Max);
         ImGui.SliderFloat("Z mt", ref ZModelTranslation.Value, ZModelTranslation.Min, ZModelTranslation.Max);
+        ImGui.NewLine();
+    }
+
+    private void DrawObjectManagement()
+    {
+        ImGui.Checkbox("Move objects", ref _withMovements);
+        ImGui.SameLine();
+        ImGui.Checkbox("Create in random position", ref _createInRandomPosition);
+        ImGui.NewLine();
+
+        ClearElementsRequested = ImGui.Button("Clear elements");
+        ImGui.SameLine();
+        GenerateManyElementsRequested = ImGui.Button("Generate random");
+        ImGui.NewLine();
     }
 
     private void DrawModelRotation()
@@ -107,5 +114,49 @@ internal sealed class GuiManager : GuiState, IDisposable
         {
             InitRotations();
         }
+        ImGui.NewLine();
+    }
+
+    private void DrawInfoLog()
+    {
+        ImGui.Text("Info:");
+        foreach (var i in _info)
+        {
+            ImGui.Text(i);
+        }
+        _info.Clear();
+    }
+
+    private void DrawObjectFactory()
+    {
+        if (ImGui.BeginTabBar("Create", ImGuiTabBarFlags.None))
+        {
+            if (ImGui.BeginTabItem("Simple"))
+            {
+                CreateSimpleObjectRequest = CreateSimpleObjectRequest with { SimpleCube = ImGui.Button("Line cube") };
+                CreateSimpleObjectRequest = CreateSimpleObjectRequest with { ColoredCube = ImGui.Button("Colored cube") };
+                CreateSimpleObjectRequest = CreateSimpleObjectRequest with { ColoredFromModelFile = ImGui.Button("Colored cube from obj file") };
+                CreateSimpleObjectRequest = CreateSimpleObjectRequest with { ColoredSphere = ImGui.Button("Colored sphere") };
+                ImGui.EndTabItem();
+            }
+
+            if (ImGui.BeginTabItem("Skinned"))
+            {
+                CreateSkinnedObjectRequest = CreateSkinnedObjectRequest with { Plane = ImGui.Button("Plane") };
+                CreateSkinnedObjectRequest = CreateSkinnedObjectRequest with { SkinnedCube = ImGui.Button("Skinned cube") };
+                CreateSkinnedObjectRequest = CreateSkinnedObjectRequest with { SkinnedCubeFromModelFile = ImGui.Button("Skinned cube from obj file") };
+                ImGui.EndTabItem();
+            }
+            
+            if (ImGui.BeginTabItem("Shaded"))
+            {
+                CreateShadedObjectRequest = CreateShadedObjectRequest with { ShadedSkinnedCube = ImGui.Button("Skinned shaded cube") };
+                ImGui.EndTabItem();
+            }
+            
+            ImGui.EndTabBar();
+        }
+        
+        ImGui.NewLine();
     }
 }

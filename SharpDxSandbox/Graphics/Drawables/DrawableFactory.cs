@@ -15,6 +15,7 @@ internal static class DrawableFactory
             DrawableKind.Plane => new Plane(device, resourceFactory),
             DrawableKind.SkinnedCube => new SkinnedCube(device, resourceFactory),
             DrawableKind.SkinnedFromModelCube => ModelLoader.LoadSkinnedCube(device, resourceFactory),
+            DrawableKind.ShadedSkinnedCube => new ShadedCube(device, resourceFactory),
             _ => throw new InvalidOperationException($"Model kind {kind} not supported")
         };
 
@@ -28,5 +29,10 @@ internal enum DrawableKind
     ColoredSphere,
     Plane,
     SkinnedCube,
-    SkinnedFromModelCube
+    SkinnedFromModelCube,
+    // ShadedColoredCube,
+    // ShadedSphere,
+    // ShadedPlane,
+    ShadedSkinnedCube,
+    //ShadedSkinnedFromModelCube,
 }

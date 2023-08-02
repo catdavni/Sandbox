@@ -40,9 +40,9 @@ internal sealed class SkinnedCube : IDrawable
         _inputLayout = resourceFactory.EnsureInputLayout(device, compiledVertexShader.ByteCode, positionLayout, texCoordLayout);
         _pixelShader = resourceFactory.EnsurePixelShader(device, Constants.Shaders.WithTexCoordAndSampler, "PShader");
 
-        _pixelShaderTextureView = resourceFactory.EnsureTextureAsPixelShaderResourceView(device, Constants.Images.CatGrumpyVertical);
+        _pixelShaderTextureView = resourceFactory.EnsureTextureAsPixelShaderResourceView(device, Constants.Images.CatSquare);
 
-        _samplerState = resourceFactory.EnsureCrated($"{nameof(Plane)}_SamplerState",
+        _samplerState = resourceFactory.EnsureCrated($"{nameof(SkinnedCube)}_SamplerState",
             () =>
             {
                 var desc = new SamplerStateDescription
@@ -56,8 +56,8 @@ internal sealed class SkinnedCube : IDrawable
             });
     }
 
-    public void RegisterWorldTransform(Func<Matrix> transform)
-        => _updateTransformMatrix = _resourceFactory.EnsureUpdateTransformMatrix(_device, $"{nameof(SkinnedCube)}_TransformMatrix", transform);
+    public void RegisterWorldTransform(Func<Transforms> transform)
+        => _updateTransformMatrix = _resourceFactory.EnsureUpdateBuffer(_device, $"{nameof(SkinnedCube)}_TransformMatrix", () => transform().Merged());
 
     public DrawPipelineMetadata Draw(DrawPipelineMetadata previous, Device device)
     {

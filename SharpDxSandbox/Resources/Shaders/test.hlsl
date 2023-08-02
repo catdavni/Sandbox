@@ -7,7 +7,7 @@
 
 cbuffer TransformMatrix: register(b0)
 {
-  float4x4 WorldViewProjection;
+  float4x4 ModelToWorld;
 };
 
 VOut VShader(float3 position : POSITION, float3 color : COLOR)

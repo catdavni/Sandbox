@@ -41,8 +41,8 @@ internal sealed class FromModel : IDrawable
         string MakeKey(string purpose) => $"{nameof(FromModel)}_{key}_{purpose}";
     }
 
-    public void RegisterWorldTransform(Func<Matrix> transform)
-        => _updateTransformMatrix = _resourceFactory.EnsureUpdateTransformMatrix(_device, Cube.TransformationMatrixKey, transform);
+    public void RegisterWorldTransform(Func<Transforms> transform)
+        => _updateTransformMatrix = _resourceFactory.EnsureUpdateBuffer(_device, Cube.TransformationMatrixKey, () => transform().Merged());
 
     public DrawPipelineMetadata Draw(DrawPipelineMetadata previous, Device device)
     {
