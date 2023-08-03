@@ -161,7 +161,9 @@ internal sealed class GuiManager : GuiState, IDisposable
             
             if (ImGui.BeginTabItem("Shaded"))
             {
-                CreateShadedObjectRequest = CreateShadedObjectRequest with { ShadedSkinnedCube = ImGui.Button("Skinned shaded cube") };
+                CreateShadedObjectRequest = CreateShadedObjectRequest with { GouraudShadedSkinnedCube = ImGui.Button("Gouraud shaded cube") };
+                CreateShadedObjectRequest = CreateShadedObjectRequest with { GouraudShadedSphere = ImGui.Button("Gouraud shaded sphere") };
+                CreateShadedObjectRequest = CreateShadedObjectRequest with { GouraudSmoothShadedSphere = ImGui.Button("Gouraud smooth shaded sphere") };
                 ImGui.EndTabItem();
             }
             

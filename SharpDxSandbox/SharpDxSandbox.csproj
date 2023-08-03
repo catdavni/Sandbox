@@ -50,7 +50,7 @@
       <None Update="Resources\Images\cube.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
-      <None Update="Resources\Shaders\FlatShading.hlsl">
+      <None Update="Resources\Shaders\GouraudShading.hlsl">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </None>
       <None Update="Resources\Shaders\LightSource.hlsl">

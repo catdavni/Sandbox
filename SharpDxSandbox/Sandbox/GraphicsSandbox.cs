@@ -129,7 +129,7 @@ internal sealed class GraphicsSandbox
     {
         return _gui.CreateInRandomPosition ? MakeRandomPosition() : MakeCenterPosition();
 
-        ModelState MakeCenterPosition() => new(kind, new Vector3(0, 0, VisibleNear), 0, 0, 0);
+        ModelState MakeCenterPosition() => new(kind, new Vector3(-_gui.ModelTranslation.X, -_gui.ModelTranslation.Y, VisibleNear - _gui.ModelTranslation.Z), 0, 0, 0);
 
         ModelState MakeRandomPosition()
         {
@@ -232,9 +232,17 @@ internal sealed class GraphicsSandbox
             {
                 CreateModel(DrawableKind.SkinnedFromModelCube);
             }
-            if (_gui.CreateShadedObjectRequest.ShadedSkinnedCube)
+            if (_gui.CreateShadedObjectRequest.GouraudShadedSkinnedCube)
             {
                 CreateModel(DrawableKind.ShadedSkinnedCube);
+            }
+            if (_gui.CreateShadedObjectRequest.GouraudShadedSphere)
+            {
+                CreateModel(DrawableKind.GouraudShadedSphere);
+            }
+            if (_gui.CreateShadedObjectRequest.GouraudSmoothShadedSphere)
+            {
+                CreateModel(DrawableKind.GouraudSmoothShadedSphere);
             }
         }
     }
@@ -247,8 +255,8 @@ internal sealed class GraphicsSandbox
         var start = Stopwatch.GetTimestamp();
         for (var i = 0; i < count; i++)
         {
-            CreateModel(DrawableKind.ShadedSkinnedCube);
-            //CreateModel(availableDrawables[i % availableDrawables.Length]);
+            //CreateModel(DrawableKind.ShadedSkinnedCube);
+            CreateModel(availableDrawables[i % availableDrawables.Length]);
         }
         var elapsed = Stopwatch.GetElapsedTime(start);
         Trace.WriteLine($"{count} elements was loaded in {elapsed.TotalSeconds}s");

@@ -21,7 +21,7 @@ public static class Constants
         public const string Test = "test.hlsl";
         public const string WithColorsConstantBuffer = "WithColorsCb.hlsl";
         public const string WithTexCoordAndSampler = "WithTexCoordAndSampler.hlsl";
-        public const string FlatShading = "FlatShading.hlsl";
+        public const string GouraudShading = "GouraudShading.hlsl";
         public const string LightSource = "LightSource.hlsl";
     }
 }

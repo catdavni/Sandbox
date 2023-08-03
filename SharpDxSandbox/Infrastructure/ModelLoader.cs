@@ -16,28 +16,28 @@ internal static class ModelLoader
     public static FromModel LoadCube(Device device, IResourceFactory resourceFactory)
     {
         const string modelName = "cube.obj";
-        var (vertices, indices) = LoadModel(resourceFactory, modelName);
+        var (vertices, indices, _) = LoadModel(resourceFactory, modelName, false);
         return new FromModel(device, resourceFactory, vertices, indices, modelName);
     }
 
     public static FromModel LoadSphere(Device device, IResourceFactory resourceFactory)
     {
         const string modelName = "sphere.obj";
-        var (vertices, indices) = LoadModel(resourceFactory, modelName);
+        var (vertices, indices, _) = LoadModel(resourceFactory, modelName, false);
         return new FromModel(device, resourceFactory, vertices, indices, modelName);
     }
 
     public static LightSource LoadLightSource(Device device, IResourceFactory resourceFactory)
     {
         const string modelName = "sphere.obj";
-        var (vertices, indices) = LoadModel(resourceFactory, modelName);
+        var (vertices, indices, _) = LoadModel(resourceFactory, modelName, false);
         return new LightSource(device, resourceFactory, vertices, indices, nameof(LightSource));
     }
 
     public static IDrawable LoadSkinnedCube(Device device, IResourceFactory resourceFactory)
     {
         const string modelName = "cube.obj";
-        var scene = EnsureScene(resourceFactory, modelName);
+        var scene = EnsureScene(resourceFactory, modelName, false);
         var mesh = scene.Meshes[0];
         var indices = mesh.GetIndices();
         var texCoords = mesh.TextureCoordinateChannels[0];
@@ -50,31 +50,50 @@ internal static class ModelLoader
         return new SkinnedFromModel(device, resourceFactory, vertices, indices, modelName);
     }
 
-    private static (RawVector3[] Vertices, int[] Indices) LoadModel(IResourceFactory resourceFactory, string modelName)
+    public static IDrawable LoadShadedSphere(Device device, IResourceFactory resourceFactory)
     {
-        var scene = EnsureScene(resourceFactory, modelName);
+        const string modelName = "sphere.obj";
+        var (vertices, indices, normals) = LoadModel(resourceFactory, modelName, false);
+        return new ShadedFromModel(device, resourceFactory, vertices, indices, normals, modelName);
+    }
+    
+    public static IDrawable LoadSmoothShadedSphere(Device device, IResourceFactory resourceFactory)
+    {
+        const string modelName = "sphere.obj";
+        const string modelKey = modelName + "Smooth";
+        var (vertices, indices, normals) = LoadModel(resourceFactory, modelName, true);
+        return new ShadedFromModel(device, resourceFactory, vertices, indices, normals, modelKey);
+    }
+
+    private static (RawVector3[] Vertices, int[] Indices, RawVector3[] Normals) LoadModel(IResourceFactory resourceFactory, string modelName, bool smoothNormals)
+    {
+        var scene = EnsureScene(resourceFactory, modelName, smoothNormals);
         var mesh = scene.Meshes[0];
         var indices = mesh.GetIndices();
         var vertices = mesh.Vertices.Select(v => new RawVector3(v.X, v.Y, v.Z)).ToArray();
-        return (vertices, indices);
+        var normals = mesh.Normals.Select(v => new RawVector3(v.X, v.Y, v.Z)).ToArray();
+        ;
+        return (vertices, indices, normals);
     }
 
-    private static Scene EnsureScene(IResourceFactory resourceFactory, string modelName)
+    private static Scene EnsureScene(IResourceFactory resourceFactory, string modelName, bool smoothNormals)
     {
-        if (SceneCache.TryGetValue(modelName, out var scene))
+        var modelKey = modelName + smoothNormals;
+        if (SceneCache.TryGetValue(modelKey, out var scene))
         {
             return scene;
         }
 
-        const PostProcessSteps flags = PostProcessSteps.JoinIdenticalVertices |
-                                       PostProcessSteps.ImproveCacheLocality |
-                                       PostProcessSteps.Triangulate |
-                                       PostProcessSteps.PreTransformVertices |
-                                       PostProcessSteps.OptimizeMeshes |
-                                       PostProcessSteps.ValidateDataStructure;
+        var flags = PostProcessSteps.JoinIdenticalVertices |
+                    PostProcessSteps.ImproveCacheLocality |
+                    PostProcessSteps.Triangulate |
+                    PostProcessSteps.PreTransformVertices |
+                    PostProcessSteps.OptimizeMeshes |
+                    PostProcessSteps.ValidateDataStructure;
+        flags |= smoothNormals ? PostProcessSteps.GenerateSmoothNormals : PostProcessSteps.GenerateNormals;
 
         scene = GetContext(resourceFactory).ImportFile(modelName, flags);
-        SceneCache.Add(modelName, scene);
+        SceneCache.Add(modelKey, scene);
         return scene;
     }
 
@@ -94,5 +113,4 @@ internal static class ModelLoader
 
                 return new Disposable<AssimpContext>(context, disposables);
             }).Value;
-
 }
