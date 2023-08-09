@@ -56,8 +56,8 @@ internal sealed class Plane : IDrawable
             });
     }
 
-    public void RegisterWorldTransform(Func<Transforms> transform)
-        => _updateTransformMatrix = _resourceFactory.EnsureUpdateBuffer(_device, AuxiliaryData.TransformMatrixKey, () => transform().Merged());
+    public void RegisterWorldTransform(Func<TransformationData> transformationData)
+        => _updateTransformMatrix = _resourceFactory.EnsureUpdateBuffer(_device, AuxiliaryData.TransformMatrixKey, () => transformationData().Merged());
 
     public DrawPipelineMetadata Draw(DrawPipelineMetadata previous, Device device)
     {

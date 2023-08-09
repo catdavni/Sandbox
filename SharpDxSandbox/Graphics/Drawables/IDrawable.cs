@@ -5,12 +5,12 @@ namespace SharpDxSandbox.Graphics.Drawables;
 
 internal interface IDrawable
 {
-    void RegisterWorldTransform(Func<Transforms> transform);
+    void RegisterWorldTransform(Func<TransformationData> transformationData);
 
     DrawPipelineMetadata Draw(DrawPipelineMetadata previous, Device device);
 }
 
-public readonly record struct Transforms(Matrix Model, Matrix World, Matrix Camera, Matrix Projection)
+public readonly record struct TransformationData(Matrix Model, Matrix World, Matrix Camera, Matrix Projection, Vector4 LightSourcePosition, Vector3 CameraPosition)
 {
     public Matrix Merged() => Model * World * Camera * Projection;
 }

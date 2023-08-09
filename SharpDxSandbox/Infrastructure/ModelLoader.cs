@@ -5,6 +5,7 @@ using SharpDX.Mathematics.Interop;
 using SharpDxSandbox.Graphics;
 using SharpDxSandbox.Graphics.Drawables;
 using SharpDxSandbox.Infrastructure.Disposables;
+using SharpDxSandbox.Resources;
 
 namespace SharpDxSandbox.Infrastructure;
 
@@ -50,19 +51,35 @@ internal static class ModelLoader
         return new SkinnedFromModel(device, resourceFactory, vertices, indices, modelName);
     }
 
-    public static IDrawable LoadShadedSphere(Device device, IResourceFactory resourceFactory)
+    public static IDrawable LoadGouraudShadedSphere(Device device, IResourceFactory resourceFactory)
     {
         const string modelName = "sphere.obj";
         var (vertices, indices, normals) = LoadModel(resourceFactory, modelName, false);
-        return new ShadedFromModel(device, resourceFactory, vertices, indices, normals, modelName);
+        return new GouraudShadedFromModel(device, resourceFactory, vertices, indices, normals, modelName);
     }
-    
-    public static IDrawable LoadSmoothShadedSphere(Device device, IResourceFactory resourceFactory)
+
+    public static IDrawable LoadGouraudSmoothShadedSphere(Device device, IResourceFactory resourceFactory)
     {
         const string modelName = "sphere.obj";
-        const string modelKey = modelName + "Smooth";
+        const string modelKey = modelName + "GouraudSmooth";
         var (vertices, indices, normals) = LoadModel(resourceFactory, modelName, true);
-        return new ShadedFromModel(device, resourceFactory, vertices, indices, normals, modelKey);
+        return new GouraudShadedFromModel(device, resourceFactory, vertices, indices, normals, modelKey);
+    }
+    
+    public static IDrawable LoadPhongShadedSphere(Device device, IResourceFactory resourceFactory)
+    {
+        const string modelName = "sphere.obj";
+        const string modelKey = modelName + "Phong";
+        var (vertices, indices, normals) = LoadModel(resourceFactory, modelName, true);
+        return new PhongShadedFromModel(device, resourceFactory, vertices, indices, normals, modelKey);
+    }
+    
+    public static IDrawable LoadPhongShadedCube(Device device, IResourceFactory resourceFactory)
+    {
+        const string modelName = "cube.obj";
+        const string modelKey = modelName + "Phong";
+        var (vertices, indices, normals) = LoadModel(resourceFactory, modelName, false);
+        return new PhongShadedFromModel(device, resourceFactory, vertices, indices, normals, modelKey);
     }
 
     private static (RawVector3[] Vertices, int[] Indices, RawVector3[] Normals) LoadModel(IResourceFactory resourceFactory, string modelName, bool smoothNormals)
@@ -72,7 +89,7 @@ internal static class ModelLoader
         var indices = mesh.GetIndices();
         var vertices = mesh.Vertices.Select(v => new RawVector3(v.X, v.Y, v.Z)).ToArray();
         var normals = mesh.Normals.Select(v => new RawVector3(v.X, v.Y, v.Z)).ToArray();
-        ;
+
         return (vertices, indices, normals);
     }
 

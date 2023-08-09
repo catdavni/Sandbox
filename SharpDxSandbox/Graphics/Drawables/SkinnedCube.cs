@@ -56,8 +56,8 @@ internal sealed class SkinnedCube : IDrawable
             });
     }
 
-    public void RegisterWorldTransform(Func<Transforms> transform)
-        => _updateTransformMatrix = _resourceFactory.EnsureUpdateBuffer(_device, $"{nameof(SkinnedCube)}_TransformMatrix", () => transform().Merged());
+    public void RegisterWorldTransform(Func<TransformationData> transformationData)
+        => _updateTransformMatrix = _resourceFactory.EnsureUpdateBuffer(_device, $"{nameof(SkinnedCube)}_TransformMatrix", () => transformationData().Merged());
 
     public DrawPipelineMetadata Draw(DrawPipelineMetadata previous, Device device)
     {

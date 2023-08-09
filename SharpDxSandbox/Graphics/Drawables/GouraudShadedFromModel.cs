@@ -5,34 +5,36 @@ using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
 using SharpDxSandbox.Resources;
-using SharpDxSandbox.Resources.Models;
 using Buffer = SharpDX.Direct3D11.Buffer;
 using Device = SharpDX.Direct3D11.Device;
 
 namespace SharpDxSandbox.Graphics.Drawables;
 
-internal sealed class ShadedCube : INeedLightSourceDrawable
+internal sealed class GouraudShadedFromModel : IDrawable
 {
     private readonly Device _device;
     private readonly IResourceFactory _resourceFactory;
-    private readonly Buffer _vertexBuffer;
+    private readonly int[] _indices;
     private readonly Buffer _indexBuffer;
-    private Func<Buffer> _updateWorldViewMatrix;
-    private Func<Buffer> _updateLightSourcePosition;
     private readonly VertexShader _vertexShader;
     private readonly InputLayout _inputLayout;
+    private readonly Buffer _vertexBuffer;
     private readonly PixelShader _pixelShader;
+    private Func<Buffer> _updateLightSourcePosition;
+    private Func<Buffer> _updateWorldViewMatrix;
+    private Func<Buffer> _updateCameraProjectionMatrix;
     private readonly ShaderResourceView _pixelShaderTextureView;
     private readonly SamplerState _samplerState;
-    private Func<Buffer> _updateCameraProjectionMatrix;
 
-    public ShadedCube(Device device, IResourceFactory resourceFactory)
+    public GouraudShadedFromModel(Device device, IResourceFactory resourceFactory, RawVector3[] vertices, int[] indices, RawVector3[] normals, string key)
     {
         _device = device;
         _resourceFactory = resourceFactory;
+        _indices = indices;
 
-        _vertexBuffer = resourceFactory.EnsureBuffer(device, Cube.Shaded.Vertices.Key, Cube.Shaded.Vertices.Data, BindFlags.VertexBuffer);
-        _indexBuffer = resourceFactory.EnsureBuffer(device, Cube.Shaded.TriangleIndices.Key, Cube.Shaded.TriangleIndices.Data, BindFlags.IndexBuffer);
+        var verticesWithNormals = vertices.Zip(normals).Select(v => new Vertex_Normal_TexCoord(v.First, v.Second, Vector2.Zero)).ToArray();
+        _vertexBuffer = resourceFactory.EnsureBuffer(device, MakeKey("Vertices"), verticesWithNormals, BindFlags.VertexBuffer);
+        _indexBuffer = resourceFactory.EnsureBuffer(device, MakeKey("Indices"), indices, BindFlags.IndexBuffer);
 
         var compiledVertexShader = resourceFactory.EnsureVertexShader(device, Constants.Shaders.GouraudShading, "VShader");
         _vertexShader = compiledVertexShader.Shader;
@@ -40,13 +42,13 @@ internal sealed class ShadedCube : INeedLightSourceDrawable
         var positionLayout = new InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0);
         var normalLayout = new InputElement("Normal", 0, Format.R32G32B32_Float, Marshal.SizeOf<RawVector3>(), 0);
         var texCoordLayout = new InputElement("TexCoord", 0, Format.R32G32_Float, Marshal.SizeOf<RawVector3>() * 2, 0);
-
         _inputLayout = resourceFactory.EnsureInputLayout(device, compiledVertexShader.ByteCode, positionLayout, normalLayout, texCoordLayout);
         _pixelShader = resourceFactory.EnsurePixelShader(device, Constants.Shaders.GouraudShading, "PShader");
+        // _pixelShaderConstantBuffer = resourceFactory.EnsureBuffer(device, Cube.SideColors.Key, Cube.SideColors.Data, BindFlags.ConstantBuffer);
 
         _pixelShaderTextureView = resourceFactory.EnsureTextureAsPixelShaderResourceView(device, Constants.Images.CatCuriousVertical);
 
-        _samplerState = resourceFactory.EnsureCrated($"{nameof(ShadedCube)}_SamplerState",
+        _samplerState = resourceFactory.EnsureCrated($"{nameof(GouraudShadedCube)}_SamplerState",
             () =>
             {
                 var desc = new SamplerStateDescription
@@ -58,32 +60,31 @@ internal sealed class ShadedCube : INeedLightSourceDrawable
                 };
                 return new SamplerState(device, desc);
             });
+
+        string MakeKey(string purpose) => $"{nameof(FromModel)}_{key}_{purpose}";
     }
 
-    public void RegisterLightSource(Func<Vector4> lightSourcePosition)
+    public void RegisterWorldTransform(Func<TransformationData> transformationData)
     {
         _updateLightSourcePosition = _resourceFactory.EnsureUpdateBuffer(
             _device,
-            $"{nameof(ShadedCube)}_LightSourcePosition",
-            lightSourcePosition);
-    }
+            $"{nameof(GouraudShadedFromModel)}_LightSourcePosition",
+            () => transformationData().LightSourcePosition);
 
-    public void RegisterWorldTransform(Func<Transforms> transform)
-    {
         _updateWorldViewMatrix = _resourceFactory.EnsureUpdateBuffer(
             _device,
-            $"{nameof(ShadedCube)}_WorldViewTransformMatrix",
+            $"{nameof(GouraudShadedCube)}_WorldViewTransformMatrix",
             () =>
             {
-                var transformMatrices = transform();
+                var transformMatrices = transformationData();
                 return transformMatrices.Model * transformMatrices.World;
             });
         _updateCameraProjectionMatrix = _resourceFactory.EnsureUpdateBuffer(
             _device,
-            $"{nameof(ShadedCube)}_CameraProjectionViewTransformMatrix",
+            $"{nameof(GouraudShadedCube)}_CameraProjectionViewTransformMatrix",
             () =>
             {
-                var transformMatrices = transform();
+                var transformMatrices = transformationData();
                 return transformMatrices.Camera * transformMatrices.Projection;
             });
     }
@@ -110,10 +111,8 @@ internal sealed class ShadedCube : INeedLightSourceDrawable
         device.ImmediateContext.VertexShader.SetConstantBuffer(2, updateLightSourcePosition);
 
         device.ImmediateContext.InputAssembler.PrimitiveTopology = PrimitiveTopology.TriangleList;
-
-        device.ImmediateContext.DrawIndexed(Cube.Shaded.TriangleIndices.Data.Length, 0, 0);
+        device.ImmediateContext.DrawIndexed(_indices.Length, 0, 0);
 
         return currentMetadata;
     }
-
 }

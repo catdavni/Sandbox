@@ -72,7 +72,7 @@ internal sealed class GraphicsSandbox
             var camera = Matrix.LookAtLH(cameraPosition, cameraDirection, Vector3.UnitY);
 
             var projection = _projectionMatrix;
-            return new Transforms(model, world, camera, projection);
+            return new TransformationData(model, world, camera, projection, _lightSourcePosition, _cameraView.WorldPosition);
         });
         _graphics.AddDrawable(model);
     }
@@ -118,10 +118,6 @@ internal sealed class GraphicsSandbox
         var model = DrawableFactory.Create(drawableKind, _graphics.Device, _resourceFactory);
         stateStorage[model.GetHashCode()] = restoreState ?? CreateWithPosition(drawableKind);
         model.RegisterWorldTransform(() => StandardTransformationMatrix(model.GetHashCode()));
-        if (model is INeedLightSourceDrawable lightPowered)
-        {
-            lightPowered.RegisterLightSource(() => _lightSourcePosition);
-        }
         _graphics.AddDrawable(model);
     }
 
@@ -153,7 +149,7 @@ internal sealed class GraphicsSandbox
         }
     }
 
-    private Transforms StandardTransformationMatrix(int modelHash)
+    private TransformationData StandardTransformationMatrix(int modelHash)
     {
         var (_, position, rotX, rotY, rotZ) = _modelsState[modelHash];
         rotX += _gui.ModelRotation.X;
@@ -171,7 +167,7 @@ internal sealed class GraphicsSandbox
         var camera = Matrix.LookAtLH(cameraPosition, cameraDirection, Vector3.UnitY);
 
         var projection = _projectionMatrix;
-        return new Transforms(model, world, camera, projection);
+        return new TransformationData(model, world, camera, projection, _lightSourcePosition, _cameraView.WorldPosition);
     }
 
     private void RotateIfRequested(object sender, EventArgs e)
@@ -234,7 +230,7 @@ internal sealed class GraphicsSandbox
             }
             if (_gui.CreateShadedObjectRequest.GouraudShadedSkinnedCube)
             {
-                CreateModel(DrawableKind.ShadedSkinnedCube);
+                CreateModel(DrawableKind.GouraudShadedSkinnedCube);
             }
             if (_gui.CreateShadedObjectRequest.GouraudShadedSphere)
             {
@@ -243,6 +239,14 @@ internal sealed class GraphicsSandbox
             if (_gui.CreateShadedObjectRequest.GouraudSmoothShadedSphere)
             {
                 CreateModel(DrawableKind.GouraudSmoothShadedSphere);
+            }
+            if (_gui.CreateShadedObjectRequest.PhongShadedSphere)
+            {
+                CreateModel(DrawableKind.PhongShadedSphere);
+            }
+            if (_gui.CreateShadedObjectRequest.PhongShadedCube)
+            {
+                CreateModel(DrawableKind.PhongShadedCube);
             }
         }
     }

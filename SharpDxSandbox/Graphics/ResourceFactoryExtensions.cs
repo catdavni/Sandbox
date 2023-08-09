@@ -67,14 +67,14 @@ internal static class ResourceFactoryExtensions
                     Marshal.SizeOf<T>());
             });
 
-    public static Func<Buffer> EnsureUpdateBuffer<T>(this IResourceFactory factory, Device device, string key, Func<T> transform) where T : struct =>
+    public static Func<Buffer> EnsureUpdateBuffer<T>(this IResourceFactory factory, Device device, string key, Func<T> dataFactory) where T : struct =>
         () =>
         {
-            var transformMatrix = transform();
+            var data = dataFactory();
             var transformMatrixBuffer = factory.EnsureBuffer(
                 device,
                 key,
-                new[] { transformMatrix },
+                new[] { data },
                 BindFlags.ConstantBuffer,
                 ResourceUsage.Dynamic,
                 CpuAccessFlags.Write);
@@ -82,7 +82,7 @@ internal static class ResourceFactoryExtensions
             device.ImmediateContext.MapSubresource(transformMatrixBuffer, MapMode.WriteDiscard, MapFlags.None, out var dataStream);
             using (dataStream)
             {
-                dataStream.Write(transformMatrix);
+                dataStream.Write(data);
                 device.ImmediateContext.UnmapSubresource(transformMatrixBuffer, 0);
             }
             return transformMatrixBuffer;

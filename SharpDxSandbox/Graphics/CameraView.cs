@@ -1,14 +1,12 @@
 ﻿using SharpDX;
 
-namespace SharpDxSandbox.Sandbox;
+namespace SharpDxSandbox.Graphics;
 
 internal sealed class CameraView
 {
     private const float MovementSpeed = 0.001f;
     private const float RotationSpeed = 0.00007f;
     private const float RotationDivider = 2f * (float)Math.PI;
-
-    private Vector3 _cameraPosition = new(0, 0, 0);
 
     private float _rotationAngle;
     private float _goRight;
@@ -18,14 +16,16 @@ internal sealed class CameraView
     {
         var cameraDirection = Vector3.TransformNormal(Vector3.UnitZ, Matrix.RotationY(_rotationAngle));
         var rightDirection = Vector3.TransformNormal(Vector3.UnitX, Matrix.RotationY(_rotationAngle));
-        _cameraPosition += cameraDirection * _goForward;
-        _cameraPosition += rightDirection * _goRight;
+        WorldPosition += cameraDirection * _goForward;
+        WorldPosition += rightDirection * _goRight;
 
         _goForward = 0f;
         _goRight = 0f;
 
-        return (_cameraPosition, _cameraPosition + cameraDirection);
+        return (WorldPosition, WorldPosition + cameraDirection);
     }
+
+    public Vector3 WorldPosition { get; private set; } = new(0, 0, 0);
 
     public void Update(bool left = false, bool right = false, bool forward = false, bool backward = false, bool rotateRight = false, bool rotateLeft = false)
     {

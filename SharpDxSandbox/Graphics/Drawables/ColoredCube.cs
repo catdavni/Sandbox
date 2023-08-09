@@ -47,8 +47,8 @@ internal sealed class ColoredCube : IDrawable
         _pixelShaderConstantBuffer = resourceFactory.EnsureBuffer(device, $"{nameof(ColoredCube)}_{nameof(SideColors)}", SideColors, BindFlags.ConstantBuffer);
     }
 
-    public void RegisterWorldTransform(Func<Transforms> transform)
-        => _updateTransformMatrix = _resourceFactory.EnsureUpdateBuffer(_device, Cube.TransformationMatrixKey, () => transform().Merged());
+    public void RegisterWorldTransform(Func<TransformationData> transformationData)
+        => _updateTransformMatrix = _resourceFactory.EnsureUpdateBuffer(_device, Cube.TransformationMatrixKey, () => transformationData().Merged());
 
     public DrawPipelineMetadata Draw(DrawPipelineMetadata previous, Device device)
     {

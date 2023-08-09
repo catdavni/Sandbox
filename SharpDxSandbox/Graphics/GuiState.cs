@@ -31,7 +31,7 @@ internal abstract class GuiState
 
     public SkinnedObjectRequest CreateSkinnedObjectRequest { get; protected set; } = new(false, false, false);
 
-    public ShadedObjectRequest CreateShadedObjectRequest { get; protected set; } = new(false, false, false);
+    public ShadedObjectRequest CreateShadedObjectRequest { get; protected set; } = new(false, false, false, false, false);
 
     public bool CreateInRandomPosition => _createInRandomPosition;
 
@@ -71,5 +71,5 @@ internal abstract class GuiState
 
     public sealed record SkinnedObjectRequest(bool Plane, bool SkinnedCube, bool SkinnedCubeFromModelFile);
 
-    public sealed record ShadedObjectRequest(bool GouraudShadedSkinnedCube, bool GouraudShadedSphere, bool GouraudSmoothShadedSphere);
+    public sealed record ShadedObjectRequest(bool GouraudShadedSkinnedCube, bool GouraudShadedSphere, bool GouraudSmoothShadedSphere, bool PhongShadedSphere, bool PhongShadedCube);
 }
