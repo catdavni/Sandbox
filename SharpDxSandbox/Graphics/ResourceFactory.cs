@@ -22,6 +22,7 @@ internal sealed class ResourceFactory : IResourceFactory
                 catch (Exception e)
                 {
                     Trace.WriteLine($"Trace {nameof(ResourceFactory)} {e}");
+                    Console.WriteLine($"Trace {nameof(ResourceFactory)} {e}");
                     _graphicsLogger.FlushMessages();
                     throw;
                 }

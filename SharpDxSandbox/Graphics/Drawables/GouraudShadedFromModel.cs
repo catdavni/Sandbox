@@ -64,7 +64,7 @@ internal sealed class GouraudShadedFromModel : IDrawable
         string MakeKey(string purpose) => $"{nameof(FromModel)}_{key}_{purpose}";
     }
 
-    public void RegisterWorldTransform(Func<TransformationData> transformationData)
+    public void RegisterTransforms(Func<TransformationData> transformationData)
     {
         _updateLightSourcePosition = _resourceFactory.EnsureUpdateBuffer(
             _device,

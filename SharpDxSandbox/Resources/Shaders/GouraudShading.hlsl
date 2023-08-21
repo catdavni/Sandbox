@@ -22,7 +22,7 @@ struct VOut
 
 VOut VShader(float3 position : POSITION, float3 normal : Normal, float2 texCoord : TexCoord)
 {
-    const float ambient = 0.2;
+   // const float ambient = 0.2;
 
     float4 vertexWorldPosition = mul(ModelToWorld, float4(position, 1.0f));
 
@@ -33,12 +33,17 @@ VOut VShader(float3 position : POSITION, float3 normal : Normal, float2 texCoord
     float3 normalizedTranslatedNormal = normalize(normalWorldTranslated);
 
     float lightNormalCodirection = dot(normalizedTranslatedNormal, normalizedLightDirection.xyz);
-    float directLight = max(0, lightNormalCodirection);
+    float diffuse = max(0, lightNormalCodirection);
+
+    const float diffuseIntensity = 0.2;
+    const float specularIntensity = 0.5;
+    const float ambient = 0.1;
+    float lightAmount = ambient + (diffuse * diffuseIntensity) + specularIntensity;// + (specular * specularIntensity);
 
     VOut result;
     result.Position = mul(WorldToCameraProjection, vertexWorldPosition);
     result.TexCoord = texCoord;
-    result.LightAmount = saturate(ambient + directLight);
+    result.LightAmount = saturate(lightAmount);
     return result;
 }
 
@@ -49,5 +54,5 @@ float4 PShader(float4 position : SV_POSITION, float2 texCoord: TexCoord, float l
 {
     // float4 texData = tex.Sample(samplerState, texCoord) * lightAmount;
     // return texData;
-    return float4(1.0f, 0.0f, 0.0f, 1.0f) * lightAmount;
+    return float4(1.0f, 1.0f, 1.0f, 1.0f) * lightAmount;
 }

@@ -1,5 +1,6 @@
 ﻿using SharpDX.Direct3D11;
 using SharpDxSandbox.Infrastructure;
+using SharpDxSandbox.Resources;
 
 namespace SharpDxSandbox.Graphics.Drawables;
 
@@ -10,17 +11,19 @@ internal static class DrawableFactory
         {
             DrawableKind.SimpleCube => new SimpleCube(device, resourceFactory),
             DrawableKind.ColoredCube => new ColoredCube(device, resourceFactory),
-            DrawableKind.ColoredFromModelCube => ModelLoader.LoadCube(device, resourceFactory),
-            DrawableKind.ColoredSphere => ModelLoader.LoadSphere(device, resourceFactory),
+            DrawableKind.ColoredFromModelCube => ModelLoader.LoadSimple(device, resourceFactory, Constants.Models.Cube),
+            DrawableKind.ColoredSphere => ModelLoader.LoadSimple(device, resourceFactory, Constants.Models.Sphere),
             DrawableKind.Plane => new Plane(device, resourceFactory),
             DrawableKind.SkinnedCube => new SkinnedCube(device, resourceFactory),
             DrawableKind.SkinnedFromModelCube => ModelLoader.LoadSkinnedCube(device, resourceFactory),
             DrawableKind.GouraudShadedSkinnedCube => new GouraudShadedCube(device, resourceFactory),
             DrawableKind.LightSource => ModelLoader.LoadLightSource(device, resourceFactory),
-            DrawableKind.GouraudShadedSphere => ModelLoader.LoadGouraudShadedSphere(device, resourceFactory),
-            DrawableKind.GouraudSmoothShadedSphere => ModelLoader.LoadGouraudSmoothShadedSphere(device, resourceFactory),
-            DrawableKind.PhongShadedSphere => ModelLoader.LoadPhongShadedSphere(device, resourceFactory),
-            DrawableKind.PhongShadedCube => ModelLoader.LoadPhongShadedCube(device, resourceFactory),
+            DrawableKind.GouraudShadedSphere => ModelLoader.LoadGouraudShaded(device, resourceFactory, Constants.Models.Sphere, false),
+            DrawableKind.GouraudSmoothShadedSphere => ModelLoader.LoadGouraudShaded(device, resourceFactory, Constants.Models.Sphere, true),
+            DrawableKind.GouraudShadedSuzanne => ModelLoader.LoadGouraudShaded(device, resourceFactory, Constants.Models.Suzanne, false),
+            DrawableKind.PhongShadedSphere => ModelLoader.LoadPhongShaded(device, resourceFactory, Constants.Models.Sphere, true),
+            DrawableKind.PhongShadedCube => ModelLoader.LoadPhongShaded(device, resourceFactory, Constants.Models.Cube, true),
+            DrawableKind.PhongShadedSuzanne => ModelLoader.LoadPhongShaded(device, resourceFactory, Constants.Models.Suzanne, true),
             _ => throw new InvalidOperationException($"Model kind {kind} not supported")
         };
 
@@ -32,16 +35,20 @@ internal enum DrawableKind
     ColoredCube,
     ColoredFromModelCube,
     ColoredSphere,
+    
     Plane,
     SkinnedCube,
     SkinnedFromModelCube,
+    
     LightSource,
-    // ShadedColoredCube,
+    
     GouraudShadedSphere,
     GouraudSmoothShadedSphere,
+    GouraudShadedSkinnedCube,
+    GouraudShadedSuzanne,
+    
     PhongShadedSphere,
     PhongShadedCube,
-    // ShadedPlane,
-    GouraudShadedSkinnedCube,
-    //ShadedSkinnedFromModelCube,
+    PhongShadedSuzanne
+    
 }

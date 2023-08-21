@@ -31,10 +31,7 @@ internal sealed class GuiManager : GuiState, IDisposable
         }
     }
 
-    public void PrintInfo(string info)
-    {
-        _info.Add(info);
-    }
+    public void PrintInfo(string info) => _info.Add(info);
 
     public void Draw()
     {
@@ -59,17 +56,64 @@ internal sealed class GuiManager : GuiState, IDisposable
 
     private void CreateLayout()
     {
+        CreateMainSettings();
+
+        CreateMaterialSettings();
+    }
+
+    private void CreateMaterialSettings()
+    {
+        if (ImGui.Begin("Material"))
+        {
+            if (ImGui.ColorPicker4("Color", ref _materialColor, ImGuiColorEditFlags.DisplayRGB))
+            {
+            }
+
+            ImGui.NewLine();
+            ImGui.SliderFloat("Ambient", ref MaterialAmbientSlider.Value, MaterialAmbientSlider.Min, MaterialAmbientSlider.Max);
+
+            ImGui.NewLine();
+            ImGui.SliderFloat("Diffuse Intensity", ref MaterialDiffuseIntensitySlider.Value, MaterialDiffuseIntensitySlider.Min, MaterialDiffuseIntensitySlider.Max);
+
+            ImGui.NewLine();
+            ImGui.SliderFloat("Specular Intensity", ref MaterialSpecularIntensitySlider.Value, MaterialSpecularIntensitySlider.Min, MaterialSpecularIntensitySlider.Max);
+
+            ImGui.NewLine();
+            ImGui.SliderFloat("Specular Power", ref MaterialSpecularPowerSlider.Value, MaterialSpecularPowerSlider.Min, MaterialSpecularPowerSlider.Max);
+
+            ImGui.NewLine();
+            ImGui.SliderFloat("Attenuation Constant", ref MaterialAttenuationConstantSlider.Value, MaterialAttenuationConstantSlider.Min, MaterialAttenuationConstantSlider.Max);
+            ImGui.NewLine();
+            ImGui.SliderFloat("Attenuation Linear", ref MaterialAttenuationLinearSlider.Value, MaterialAttenuationLinearSlider.Min, MaterialAttenuationLinearSlider.Max);
+            ImGui.NewLine();
+            ImGui.SliderFloat("Attenuation Quadric", ref MaterialAttenuationQuadricSlider.Value, MaterialAttenuationQuadricSlider.Min, MaterialAttenuationQuadricSlider.Max);
+
+            ImGui.NewLine();
+            if (ImGui.Button("Reset light"))
+            {
+                InitMaterial();
+            }
+        }
+        ImGui.End();
+    }
+
+    private void CreateMainSettings()
+    {
         if (ImGui.Begin("Controls"))
         {
             DrawFpsInfo();
 
-            DrawModelTranslation();
+            DrawModelTransformations();
 
-            DrawModelRotation();
+            ImGui.NewLine();
 
             DrawLightSourcePosition();
 
+            ImGui.NewLine();
+
             DrawObjectManagement();
+
+            ImGui.NewLine();
 
             DrawObjectFactory();
 
@@ -84,12 +128,48 @@ internal sealed class GuiManager : GuiState, IDisposable
         ImGui.NewLine();
     }
 
+    private void DrawModelTransformations()
+    {
+        if (ImGui.BeginTabBar("Object", ImGuiTabBarFlags.None))
+        {
+            if (ImGui.BeginTabItem("Translation"))
+            {
+                DrawModelTranslation();
+                ImGui.EndTabItem();
+            }
+
+            if (ImGui.BeginTabItem("Rotation"))
+            {
+                DrawModelRotation();
+                ImGui.EndTabItem();
+            }
+            ImGui.EndTabBar();
+        }
+    }
+
     private void DrawModelTranslation()
     {
-        ImGui.Text("Translation");
-        ImGui.SliderFloat("X mt", ref XModelTranslation.Value, XModelTranslation.Min, XModelTranslation.Max);
+        //ImGui.Text("Translation");
         ImGui.SliderFloat("Y mt", ref YModelTranslation.Value, YModelTranslation.Min, YModelTranslation.Max);
+        ImGui.SliderFloat("X mt", ref XModelTranslation.Value, XModelTranslation.Min, XModelTranslation.Max);
         ImGui.SliderFloat("Z mt", ref ZModelTranslation.Value, ZModelTranslation.Min, ZModelTranslation.Max);
+        if (ImGui.Button("Reset translation"))
+        {
+            InitTranslations();
+        }
+        ImGui.NewLine();
+    }
+
+    private void DrawModelRotation()
+    {
+        //ImGui.Text("Rotation");
+        ImGui.SliderFloat("X rad", ref XModelRotation.Value, XModelRotation.Min, XModelRotation.Max);
+        ImGui.SliderFloat("Y rad", ref YModelRotation.Value, YModelRotation.Min, YModelRotation.Max);
+        ImGui.SliderFloat("Z rad", ref ZModelRotation.Value, ZModelRotation.Min, ZModelRotation.Max);
+        if (ImGui.Button("Reset rotation"))
+        {
+            InitRotations();
+        }
         ImGui.NewLine();
     }
 
@@ -106,24 +186,11 @@ internal sealed class GuiManager : GuiState, IDisposable
         ImGui.NewLine();
     }
 
-    private void DrawModelRotation()
-    {
-        ImGui.Text("Rotation");
-        ImGui.SliderFloat("X rad", ref XModelRotation.Value, XModelRotation.Min, XModelRotation.Max);
-        ImGui.SliderFloat("Y rad", ref YModelRotation.Value, YModelRotation.Min, YModelRotation.Max);
-        ImGui.SliderFloat("Z rad", ref ZModelRotation.Value, ZModelRotation.Min, ZModelRotation.Max);
-        if (ImGui.Button("Reset rotation"))
-        {
-            InitRotations();
-        }
-        ImGui.NewLine();
-    }
-    
     private void DrawLightSourcePosition()
     {
         ImGui.Text("LightSource");
-        ImGui.SliderFloat("X l", ref XLightPosition.Value, XLightPosition.Min, XLightPosition.Max);
         ImGui.SliderFloat("Y l", ref YLightPosition.Value, YLightPosition.Min, YLightPosition.Max);
+        ImGui.SliderFloat("X l", ref XLightPosition.Value, XLightPosition.Min, XLightPosition.Max);
         ImGui.SliderFloat("Z l", ref ZLightPosition.Value, ZLightPosition.Min, ZLightPosition.Max);
         ImGui.NewLine();
     }
@@ -142,12 +209,15 @@ internal sealed class GuiManager : GuiState, IDisposable
     {
         if (ImGui.BeginTabBar("Create", ImGuiTabBarFlags.None))
         {
-            if (ImGui.BeginTabItem("Simple"))
+            if (ImGui.BeginTabItem("Shaded"))
             {
-                CreateSimpleObjectRequest = CreateSimpleObjectRequest with { SimpleCube = ImGui.Button("Line cube") };
-                CreateSimpleObjectRequest = CreateSimpleObjectRequest with { ColoredCube = ImGui.Button("Colored cube") };
-                CreateSimpleObjectRequest = CreateSimpleObjectRequest with { ColoredFromModelFile = ImGui.Button("Colored cube from obj file") };
-                CreateSimpleObjectRequest = CreateSimpleObjectRequest with { ColoredSphere = ImGui.Button("Colored sphere") };
+                CreateShadedObjectRequest = CreateShadedObjectRequest with { GouraudShadedSkinnedCube = ImGui.Button("Gouraud shaded cube") };
+                CreateShadedObjectRequest = CreateShadedObjectRequest with { GouraudShadedSphere = ImGui.Button("Gouraud shaded sphere") };
+                CreateShadedObjectRequest = CreateShadedObjectRequest with { GouraudSmoothShadedSphere = ImGui.Button("Gouraud smooth shaded sphere") };
+                CreateShadedObjectRequest = CreateShadedObjectRequest with { GouraudShadedSuzanne = ImGui.Button("Gouraud shaded suzanne") };
+                CreateShadedObjectRequest = CreateShadedObjectRequest with { PhongShadedSphere = ImGui.Button("Phong shaded sphere") };
+                CreateShadedObjectRequest = CreateShadedObjectRequest with { PhongShadedCube = ImGui.Button("Phong shaded cube") };
+                CreateShadedObjectRequest = CreateShadedObjectRequest with { PhongShadedSuzanne = ImGui.Button("Phong shaded suzanne") };
                 ImGui.EndTabItem();
             }
 
@@ -158,20 +228,19 @@ internal sealed class GuiManager : GuiState, IDisposable
                 CreateSkinnedObjectRequest = CreateSkinnedObjectRequest with { SkinnedCubeFromModelFile = ImGui.Button("Skinned cube from obj file") };
                 ImGui.EndTabItem();
             }
-            
-            if (ImGui.BeginTabItem("Shaded"))
+
+            if (ImGui.BeginTabItem("Simple"))
             {
-                CreateShadedObjectRequest = CreateShadedObjectRequest with { GouraudShadedSkinnedCube = ImGui.Button("Gouraud shaded cube") };
-                CreateShadedObjectRequest = CreateShadedObjectRequest with { GouraudShadedSphere = ImGui.Button("Gouraud shaded sphere") };
-                CreateShadedObjectRequest = CreateShadedObjectRequest with { GouraudSmoothShadedSphere = ImGui.Button("Gouraud smooth shaded sphere") };
-                CreateShadedObjectRequest = CreateShadedObjectRequest with { PhongShadedSphere = ImGui.Button("Phong shaded sphere") };
-                CreateShadedObjectRequest = CreateShadedObjectRequest with { PhongShadedCube = ImGui.Button("Phong shaded cube") };
+                CreateSimpleObjectRequest = CreateSimpleObjectRequest with { SimpleCube = ImGui.Button("Line cube") };
+                CreateSimpleObjectRequest = CreateSimpleObjectRequest with { ColoredCube = ImGui.Button("Colored cube") };
+                CreateSimpleObjectRequest = CreateSimpleObjectRequest with { ColoredFromModelFile = ImGui.Button("Colored cube from obj file") };
+                CreateSimpleObjectRequest = CreateSimpleObjectRequest with { ColoredSphere = ImGui.Button("Colored sphere") };
                 ImGui.EndTabItem();
             }
-            
+
             ImGui.EndTabBar();
         }
-        
+
         ImGui.NewLine();
     }
 }

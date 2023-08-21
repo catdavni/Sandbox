@@ -40,7 +40,7 @@ internal sealed class FromModel : IDrawable
         string MakeKey(string purpose) => $"{nameof(FromModel)}_{key}_{purpose}";
     }
 
-    public void RegisterWorldTransform(Func<TransformationData> transformationData)
+    public void RegisterTransforms(Func<TransformationData> transformationData)
         => _updateTransformMatrix = _resourceFactory.EnsureUpdateBuffer(_device, Cube.TransformationMatrixKey, () => transformationData().Merged());
 
     public DrawPipelineMetadata Draw(DrawPipelineMetadata previous, Device device)
@@ -53,7 +53,8 @@ internal sealed class FromModel : IDrawable
         currentMetadata = currentMetadata.EnsureInputLayoutBinding(device, _inputLayout);
         currentMetadata = currentMetadata.EnsureVertexShaderBinding(device, _vertexShader);
         currentMetadata = currentMetadata.EnsurePixelShader(device, _pixelShader);
-        currentMetadata = currentMetadata.EnsurePixelShaderConstantBuffer(device, _pixelShaderConstantBuffer);
+        
+        device.ImmediateContext.PixelShader.SetConstantBuffer(0, _pixelShaderConstantBuffer);
 
         device.ImmediateContext.VertexShader.SetConstantBuffer(0, _updateTransformMatrix());
         

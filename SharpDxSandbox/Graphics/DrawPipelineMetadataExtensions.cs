@@ -94,16 +94,6 @@ public static class DrawPipelineMetadataExtensions
         return origin;
     }
 
-    public static DrawPipelineMetadata EnsurePixelShaderConstantBuffer(this DrawPipelineMetadata origin, Device device, Buffer shader)
-    {
-        if (origin.PixelShaderConstantBufferHash != shader.GetHashCode())
-        {
-            device.ImmediateContext.PixelShader.SetConstantBuffer(0, shader);
-            origin = origin with { PixelShaderConstantBufferHash = shader.GetHashCode() };
-        }
-        return origin;
-    }
-
     public static DrawPipelineMetadata EnsureIndexBufferBinding(this DrawPipelineMetadata origin, Device device, Buffer indexBuffer)
     {
         if (origin.IndexBufferHash != indexBuffer.GetHashCode())

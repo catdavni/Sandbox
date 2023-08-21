@@ -60,7 +60,7 @@ internal sealed class GouraudShadedCube : IDrawable
             });
     }
 
-    public void RegisterWorldTransform(Func<TransformationData> transformationData)
+    public void RegisterTransforms(Func<TransformationData> transformationData)
     {
         _updateLightSourcePosition = _resourceFactory.EnsureUpdateBuffer(
             _device,

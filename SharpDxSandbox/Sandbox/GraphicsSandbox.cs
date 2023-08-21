@@ -31,7 +31,7 @@ internal sealed class GraphicsSandbox
     private ResourceFactory _resourceFactory;
     private GuiManager _gui;
 
-    public Task Start() => new Window(2048, 1512).RunInWindow(Drawing);
+    public Task Start() => new Window(3000, 1512).RunInWindow(Drawing);
 
     private async Task Drawing(Window window, CancellationToken cancellation)
     {
@@ -61,7 +61,7 @@ internal sealed class GraphicsSandbox
     private void CreateLightSource()
     {
         var model = DrawableFactory.Create(DrawableKind.LightSource, _graphics.Device, _resourceFactory);
-        model.RegisterWorldTransform(() =>
+        model.RegisterTransforms(() =>
         {
             _lightSourcePosition = new Vector4(_gui.LightSourcePosition.X, _gui.LightSourcePosition.Y, VisibleNear / 2 + _gui.LightSourcePosition.Z, 1);
             var model = Matrix.Scaling(0.1f);
@@ -117,7 +117,26 @@ internal sealed class GraphicsSandbox
         stateStorage ??= _modelsState;
         var model = DrawableFactory.Create(drawableKind, _graphics.Device, _resourceFactory);
         stateStorage[model.GetHashCode()] = restoreState ?? CreateWithPosition(drawableKind);
-        model.RegisterWorldTransform(() => StandardTransformationMatrix(model.GetHashCode()));
+        model.RegisterTransforms(() => StandardTransformationMatrix(model.GetHashCode()));
+        model.RegisterMaterialModifier(m =>
+        {
+            var newColor = _gui.MaterialColor == Vector4.Zero ? m.MaterialColor : _gui.MaterialColor;
+
+            var (ambient, diffuseIntensity, specularIntensity, specularPower) = m.LightTraits;
+            var newLightTraits = new LightTraits(
+                ambient + _gui.LightTraits.Ambient,
+                diffuseIntensity + _gui.LightTraits.DiffuseIntensity,
+                specularIntensity + _gui.LightTraits.SpecularIntensity,
+                specularPower + _gui.LightTraits.SpecularPower);
+
+            var (constant, linear, quadric, _) = m.Attenuation;
+            var newAttenuation = Attenuation.Create(
+                constant + _gui.MaterialAttenuation.Constant,
+                linear + _gui.MaterialAttenuation.Linear,
+                quadric + _gui.MaterialAttenuation.Quardic);
+
+            return new Material(newColor, newLightTraits, newAttenuation);
+        });
         _graphics.AddDrawable(model);
     }
 
@@ -240,6 +259,10 @@ internal sealed class GraphicsSandbox
             {
                 CreateModel(DrawableKind.GouraudSmoothShadedSphere);
             }
+            if (_gui.CreateShadedObjectRequest.GouraudShadedSuzanne)
+            {
+                CreateModel(DrawableKind.GouraudShadedSuzanne);
+            }
             if (_gui.CreateShadedObjectRequest.PhongShadedSphere)
             {
                 CreateModel(DrawableKind.PhongShadedSphere);
@@ -248,14 +271,19 @@ internal sealed class GraphicsSandbox
             {
                 CreateModel(DrawableKind.PhongShadedCube);
             }
+            if (_gui.CreateShadedObjectRequest.PhongShadedSuzanne)
+            {
+                CreateModel(DrawableKind.PhongShadedSuzanne);
+            }
         }
     }
 
     private void GenerateMany()
     {
-        const int count = 3000;
+        const int count = 1000;
         //const int count = 1;
-        var availableDrawables = Enum.GetValues<DrawableKind>();
+        var availableDrawables = new[] { DrawableKind.PhongShadedSphere, DrawableKind.PhongShadedCube, DrawableKind.PhongShadedSuzanne }; 
+        //var availableDrawables = Enum.GetValues<DrawableKind>();
         var start = Stopwatch.GetTimestamp();
         for (var i = 0; i < count; i++)
         {

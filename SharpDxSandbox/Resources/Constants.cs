@@ -14,6 +14,7 @@ public static class Constants
     {
         public const string Cube = "cube.obj";
         public const string Sphere = "sphere.obj";
+        public const string Suzanne = "suzanne.obj";
     }
     
     public static class Shaders

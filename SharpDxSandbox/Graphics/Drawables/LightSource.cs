@@ -38,7 +38,7 @@ internal sealed class LightSource : IDrawable
         string MakeKey(string purpose) => $"{nameof(LightSource)}_{key}_{purpose}";
     }
 
-    public void RegisterWorldTransform(Func<TransformationData> transformationData)
+    public void RegisterTransforms(Func<TransformationData> transformationData)
         => _updateTransformMatrix = _resourceFactory.EnsureUpdateBuffer(_device, Cube.TransformationMatrixKey, () => transformationData().Merged());
 
     public DrawPipelineMetadata Draw(DrawPipelineMetadata previous, Device device)

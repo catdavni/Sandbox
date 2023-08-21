@@ -53,7 +53,7 @@ internal sealed class SimpleCube : IDrawable
         _pixelShaderConstantBuffer = resourceFactory.EnsureBuffer(device, Cube.SideColors.Key, Cube.SideColors.Data, BindFlags.ConstantBuffer);
     }
 
-    public void RegisterWorldTransform(Func<TransformationData> transformationData)
+    public void RegisterTransforms(Func<TransformationData> transformationData)
         => _updateTransformMatrix = _resourceFactory.EnsureUpdateBuffer(_device, Cube.TransformationMatrixKey, () => transformationData().Merged());
 
     public DrawPipelineMetadata Draw(DrawPipelineMetadata previous, Device device)
@@ -64,7 +64,8 @@ internal sealed class SimpleCube : IDrawable
         currentMetadata = currentMetadata.EnsureInputLayoutBinding(device, _inputLayout);
         currentMetadata = currentMetadata.EnsureVertexShaderBinding(device, _vertexShader);
         currentMetadata = currentMetadata.EnsurePixelShader(device, _pixelShader);
-        currentMetadata = currentMetadata.EnsurePixelShaderConstantBuffer(device, _pixelShaderConstantBuffer);
+
+        device.ImmediateContext.PixelShader.SetConstantBuffer(0, _pixelShaderConstantBuffer);
 
         var updatedConstantBuffer = _updateTransformMatrix();
         device.ImmediateContext.VertexShader.SetConstantBuffer(0, updatedConstantBuffer);

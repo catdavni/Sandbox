@@ -59,7 +59,7 @@ internal sealed class SkinnedFromModel : IDrawable
         string MakeKey(string purpose) => $"{nameof(SkinnedFromModel)}_{key}_{purpose}";
     }
 
-    public void RegisterWorldTransform(Func<TransformationData> transformationData)
+    public void RegisterTransforms(Func<TransformationData> transformationData)
         => _updateTransformMatrix = _resourceFactory.EnsureUpdateBuffer(_device, $"{nameof(SkinnedFromModel)}_TransformMatrix", () => transformationData().Merged());
 
     public DrawPipelineMetadata Draw(DrawPipelineMetadata previous, Device device)

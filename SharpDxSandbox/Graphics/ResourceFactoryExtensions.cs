@@ -14,6 +14,10 @@ namespace SharpDxSandbox.Graphics;
 
 internal static class ResourceFactoryExtensions
 {
+    private static readonly ShaderFlags ShaderFlags = ShaderFlags.Debug 
+                                                      | ShaderFlags.DebugNameForSource 
+                                                      | ShaderFlags.EnableStrictness
+                                                      | ShaderFlags.WarningsAreErrors;
     private static readonly string ShadersPath = Path.Combine("Resources", "Shaders");
 
     public static CompiledVertexShader EnsureVertexShader(this IResourceFactory factory, Device device, string shaderFileName, string entryPoint) =>
@@ -21,7 +25,11 @@ internal static class ResourceFactoryExtensions
             () =>
             {
                 var path = Path.Combine(ShadersPath, shaderFileName);
-                using var vertexShaderBytes = ShaderBytecode.CompileFromFile(path, entryPoint, "vs_4_0", ShaderFlags.Debug | ShaderFlags.DebugNameForSource);
+                using var vertexShaderBytes = ShaderBytecode.CompileFromFile(
+                    path, 
+                    entryPoint, 
+                    "vs_5_0", 
+                    ShaderFlags);
                 var shader = new VertexShader(device, vertexShaderBytes.Bytecode);
                 return new CompiledVertexShader(shader, vertexShaderBytes.Bytecode);
             });
@@ -38,7 +46,11 @@ internal static class ResourceFactoryExtensions
             () =>
             {
                 var path = Path.Combine(ShadersPath, shaderFileName);
-                using var pixelShaderBytes = ShaderBytecode.CompileFromFile(path, entryPoint, "ps_4_0");
+                using var pixelShaderBytes = ShaderBytecode.CompileFromFile(
+                    path, 
+                    entryPoint,
+                    "ps_5_0",
+                    ShaderFlags);
                 return new PixelShader(device, pixelShaderBytes.Bytecode);
             });
 

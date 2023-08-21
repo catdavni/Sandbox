@@ -1,11 +1,11 @@
 ﻿using System.Diagnostics;
 using Assimp;
+using Assimp.Unmanaged;
 using SharpDX.Direct3D11;
 using SharpDX.Mathematics.Interop;
 using SharpDxSandbox.Graphics;
 using SharpDxSandbox.Graphics.Drawables;
 using SharpDxSandbox.Infrastructure.Disposables;
-using SharpDxSandbox.Resources;
 
 namespace SharpDxSandbox.Infrastructure;
 
@@ -14,31 +14,23 @@ internal static class ModelLoader
     private static readonly string ModelsPath = Path.Combine("Resources", "Models");
     private static readonly Dictionary<string, Scene> SceneCache = new();
 
-    public static FromModel LoadCube(Device device, IResourceFactory resourceFactory)
+    public static FromModel LoadSimple(Device device, IResourceFactory resourceFactory, string modelName)
     {
-        const string modelName = "cube.obj";
-        var (vertices, indices, _) = LoadModel(resourceFactory, modelName, false);
-        return new FromModel(device, resourceFactory, vertices, indices, modelName);
-    }
-
-    public static FromModel LoadSphere(Device device, IResourceFactory resourceFactory)
-    {
-        const string modelName = "sphere.obj";
-        var (vertices, indices, _) = LoadModel(resourceFactory, modelName, false);
+        var (vertices, indices, _) = LoadModel(modelName, false);
         return new FromModel(device, resourceFactory, vertices, indices, modelName);
     }
 
     public static LightSource LoadLightSource(Device device, IResourceFactory resourceFactory)
     {
         const string modelName = "sphere.obj";
-        var (vertices, indices, _) = LoadModel(resourceFactory, modelName, false);
+        var (vertices, indices, _) = LoadModel(modelName, false);
         return new LightSource(device, resourceFactory, vertices, indices, nameof(LightSource));
     }
 
     public static IDrawable LoadSkinnedCube(Device device, IResourceFactory resourceFactory)
     {
         const string modelName = "cube.obj";
-        var scene = EnsureScene(resourceFactory, modelName, false);
+        var scene = EnsureScene(modelName, false);
         var mesh = scene.Meshes[0];
         var indices = mesh.GetIndices();
         var texCoords = mesh.TextureCoordinateChannels[0];
@@ -51,40 +43,23 @@ internal static class ModelLoader
         return new SkinnedFromModel(device, resourceFactory, vertices, indices, modelName);
     }
 
-    public static IDrawable LoadGouraudShadedSphere(Device device, IResourceFactory resourceFactory)
+    public static IDrawable LoadGouraudShaded(Device device, IResourceFactory resourceFactory, string modelName, bool smoothNormals)
     {
-        const string modelName = "sphere.obj";
-        var (vertices, indices, normals) = LoadModel(resourceFactory, modelName, false);
-        return new GouraudShadedFromModel(device, resourceFactory, vertices, indices, normals, modelName);
-    }
-
-    public static IDrawable LoadGouraudSmoothShadedSphere(Device device, IResourceFactory resourceFactory)
-    {
-        const string modelName = "sphere.obj";
-        const string modelKey = modelName + "GouraudSmooth";
-        var (vertices, indices, normals) = LoadModel(resourceFactory, modelName, true);
+        var modelKey = modelName + "_gouraud" + (smoothNormals ? "_smooth" : "_notSmooth");
+        var (vertices, indices, normals) = LoadModel(modelName, smoothNormals);
         return new GouraudShadedFromModel(device, resourceFactory, vertices, indices, normals, modelKey);
     }
-    
-    public static IDrawable LoadPhongShadedSphere(Device device, IResourceFactory resourceFactory)
+
+    public static IDrawable LoadPhongShaded(Device device, IResourceFactory resourceFactory, string modelName, bool smoothNormals)
     {
-        const string modelName = "sphere.obj";
-        const string modelKey = modelName + "Phong";
-        var (vertices, indices, normals) = LoadModel(resourceFactory, modelName, true);
-        return new PhongShadedFromModel(device, resourceFactory, vertices, indices, normals, modelKey);
-    }
-    
-    public static IDrawable LoadPhongShadedCube(Device device, IResourceFactory resourceFactory)
-    {
-        const string modelName = "cube.obj";
-        const string modelKey = modelName + "Phong";
-        var (vertices, indices, normals) = LoadModel(resourceFactory, modelName, false);
+        var modelKey = modelName + "_phong" + (smoothNormals ? "_smooth" : "_notSmooth");
+        var (vertices, indices, normals) = LoadModel(modelName, smoothNormals);
         return new PhongShadedFromModel(device, resourceFactory, vertices, indices, normals, modelKey);
     }
 
-    private static (RawVector3[] Vertices, int[] Indices, RawVector3[] Normals) LoadModel(IResourceFactory resourceFactory, string modelName, bool smoothNormals)
+    private static (RawVector3[] Vertices, int[] Indices, RawVector3[] Normals) LoadModel(string modelName, bool smoothNormals)
     {
-        var scene = EnsureScene(resourceFactory, modelName, smoothNormals);
+        var scene = EnsureScene(modelName, smoothNormals);
         var mesh = scene.Meshes[0];
         var indices = mesh.GetIndices();
         var vertices = mesh.Vertices.Select(v => new RawVector3(v.X, v.Y, v.Z)).ToArray();
@@ -93,7 +68,7 @@ internal static class ModelLoader
         return (vertices, indices, normals);
     }
 
-    private static Scene EnsureScene(IResourceFactory resourceFactory, string modelName, bool smoothNormals)
+    private static Scene EnsureScene(string modelName, bool smoothNormals)
     {
         var modelKey = modelName + smoothNormals;
         if (SceneCache.TryGetValue(modelKey, out var scene))
@@ -109,25 +84,25 @@ internal static class ModelLoader
                     PostProcessSteps.ValidateDataStructure;
         flags |= smoothNormals ? PostProcessSteps.GenerateSmoothNormals : PostProcessSteps.GenerateNormals;
 
-        scene = GetContext(resourceFactory).ImportFile(modelName, flags);
+        using var context = GetContext().Value;
+        scene = context.ImportFile(modelName, flags);
         SceneCache.Add(modelKey, scene);
         return scene;
     }
 
-    private static AssimpContext GetContext(IResourceFactory resourceFactory) =>
-        resourceFactory.EnsureCrated(nameof(AssimpContext),
-            () =>
-            {
-                var disposables = new DisposableStack();
+    private static Disposable<AssimpContext> GetContext()
+    {
+        var disposables = new DisposableStack();
 
-                var logStream = new ConsoleLogStream(nameof(ModelLoader)).DisposeWith(disposables);
-                logStream.Attach();
+        var logStream = new ConsoleLogStream(nameof(ModelLoader)).DisposeWith(disposables);
+        logStream.Attach();
 
-                var fs = new FileIOSystem(ModelsPath).DisposeWith(disposables);
+        var fs = new FileIOSystem(ModelsPath).DisposeWith(disposables);
 
-                var context = new AssimpContext().DisposeWith(disposables);
-                context.SetIOSystem(fs);
+        var context = new AssimpContext().DisposeWith(disposables);
+                AssimpLibrary.Instance.ThrowOnLoadFailure = false;
+        context.SetIOSystem(fs);
 
-                return new Disposable<AssimpContext>(context, disposables);
-            }).Value;
+        return new Disposable<AssimpContext>(context, disposables);
+    }
 }
