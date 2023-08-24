@@ -12,7 +12,9 @@ internal sealed class Window : IDisposable
     private const string WindowTitle = "Piu";
     private const string WindowClassName = nameof(Window);
     private readonly CancellationTokenSource _windowMessagePumpCancellation;
-    private readonly ConcurrentDictionary<string, WindowProcHandler> _windowProcedures;
+    private readonly ConcurrentDictionary<string, WindowProc> _windowProcedures;
+    private readonly RECT _initialMouseClipRect;
+    private bool _clipMouseToWindow;
 
     public Window(int width, int height)
     {
@@ -29,6 +31,8 @@ internal sealed class Window : IDisposable
                 CloseWindow();
             }
         };
+
+        Win32Error.ThrowLastErrorIfFalse(GetClipCursor(out _initialMouseClipRect));
     }
 
     public Task Presentation { get; }
@@ -39,6 +43,26 @@ internal sealed class Window : IDisposable
 
     public int Height { get; private set; }
 
+    public bool IsCursorVisible { get; set; } = true;
+
+    public bool ClipMouseToWindow
+    {
+        get => _clipMouseToWindow;
+        set
+        {
+            if (value)
+            {
+                GetWindowRect(Handle, out var rect);
+                ClipCursor(rect);
+            }
+            else
+            {
+                ClipCursor(_initialMouseClipRect);
+            }
+            _clipMouseToWindow = value;
+        }
+    }
+
     public event EventHandler<EventArgs> OnWindowSizeChanged;
 
     public event EventHandler<string> OnCharKeyPressed;
@@ -47,11 +71,8 @@ internal sealed class Window : IDisposable
 
     public event EventHandler<EventArgs> OnWindowClosed;
 
-    public void RegisterWindowProcHandler(string purpose, Action<HWND, uint, IntPtr, IntPtr> handler)
-        => _windowProcedures[purpose] = WindowProcHandler.AsHandler(handler);
-
-    public void RegisterWindowProcInterceptor(string purpose, Func<HWND, uint, IntPtr, IntPtr, IntPtr> hook)
-        => _windowProcedures[purpose] = WindowProcHandler.AsInterceptor(hook);
+    public void RegisterWindowProcHandler(string purpose, WindowProc handler)
+        => _windowProcedures[purpose] = handler;
 
     public void CloseWindow() => _windowMessagePumpCancellation.Cancel();
 
@@ -139,7 +160,6 @@ internal sealed class Window : IDisposable
             {
                 if (GetAsyncKeyState((int)vk) != 0)
                 {
-                    //Console.WriteLine(vk);
                     OnKeyDown?.Invoke(this, vk);
                 }
             }
@@ -148,15 +168,6 @@ internal sealed class Window : IDisposable
 
     private IntPtr MainWindowProcHandler(HWND hwnd, uint msg, IntPtr wparam, IntPtr lparam)
     {
-        foreach (var windowProcedure in _windowProcedures)
-        {
-            var result = windowProcedure.Value.Handler(hwnd, msg, wparam, lparam);
-            if (windowProcedure.Value.IsInterceptor)
-            {
-                return result;
-            }
-        }
-
         var message = msg.ToEnum<WindowMessage>();
         switch (message)
         {
@@ -179,7 +190,22 @@ internal sealed class Window : IDisposable
                 PostQuitMessage();
                 break;
             }
+            case WindowMessage.WM_SETCURSOR:
+            {
+                if (!IsCursorVisible)
+                {
+                    SetCursor(new SafeHCURSOR(IntPtr.Zero));
+                    return 1;
+                }
+                break;
+            }
         }
+        
+        foreach (var windowProcedure in _windowProcedures)
+        {
+            windowProcedure.Value(hwnd, msg, wparam, lparam);
+        }
+        
         return DefWindowProc(hwnd, msg, wparam, lparam);
     }
 
@@ -188,19 +214,5 @@ internal sealed class Window : IDisposable
         _windowMessagePumpCancellation.Cancel();
         _windowMessagePumpCancellation.Dispose();
         Presentation.Wait();
-    }
-
-    private sealed record WindowProcHandler(Func<HWND, uint, IntPtr, IntPtr, IntPtr> Handler, bool IsInterceptor)
-    {
-        public static WindowProcHandler AsInterceptor(Func<HWND, uint, IntPtr, IntPtr, IntPtr> hook)
-            => new(hook, true);
-
-        public static WindowProcHandler AsHandler(Action<HWND, uint, IntPtr, IntPtr> handler)
-            => new((h, m, w, l) =>
-                {
-                    handler(h, m, w, l);
-                    return IntPtr.Zero;
-                },
-                false);
     }
 }

@@ -4,7 +4,6 @@ using SharpDX;
 using SharpDxSandbox.Graphics;
 using SharpDxSandbox.Graphics.Drawables;
 using SharpDxSandbox.Infrastructure;
-using Vanara.PInvoke;
 
 namespace SharpDxSandbox.Sandbox;
 
@@ -42,17 +41,19 @@ internal sealed class GraphicsSandbox
         using (_gui = new GuiManager(_graphics.Device, window))
         using (_resourceFactory = new ResourceFactory(_graphics.Logger))
         {
+            using var io = new InputOutput(window);
+            using var controlKeys = io.CameraPositionChanges.Subscribe(
+                k => _cameraView.Update(k.A, k.D, k.W, k.S, k.RotateRight, k.RotateLeft, k.RotateUp, k.RotateDown));
+
             _graphics.WithGui(_gui);
             RestoreModels();
             CreateLightSource();
 
-            window.OnKeyDown += UpdateCamera;
             _graphics.OnEndFrame += HandleGuiCalls;
             _graphics.OnEndFrame += RotateIfRequested;
 
             await _graphics.Work(cancellation);
 
-            window.OnKeyDown -= UpdateCamera;
             _graphics.OnEndFrame -= HandleGuiCalls;
             _graphics.OnEndFrame -= RotateIfRequested;
         }
@@ -75,31 +76,6 @@ internal sealed class GraphicsSandbox
             return new TransformationData(model, world, camera, projection, _lightSourcePosition, _cameraView.WorldPosition);
         });
         _graphics.AddDrawable(model);
-    }
-
-    private void UpdateCamera(object sender, User32.VK e)
-    {
-        switch (e)
-        {
-            case User32.VK.VK_A:
-                _cameraView.Update(left: true);
-                break;
-            case User32.VK.VK_D:
-                _cameraView.Update(right: true);
-                break;
-            case User32.VK.VK_W:
-                _cameraView.Update(forward: true);
-                break;
-            case User32.VK.VK_S:
-                _cameraView.Update(backward: true);
-                break;
-            case User32.VK.VK_OEM_1:
-                _cameraView.Update(rotateLeft: true);
-                break;
-            case User32.VK.VK_OEM_5:
-                _cameraView.Update(rotateRight: true);
-                break;
-        }
     }
 
     private void RestoreModels()
@@ -282,8 +258,8 @@ internal sealed class GraphicsSandbox
     {
         const int count = 1000;
         //const int count = 1;
-        var availableDrawables = new[] { DrawableKind.PhongShadedSphere, DrawableKind.PhongShadedCube, DrawableKind.PhongShadedSuzanne }; 
-        //var availableDrawables = Enum.GetValues<DrawableKind>();
+        //var availableDrawables = new[] { DrawableKind.PhongShadedSphere, DrawableKind.PhongShadedCube, DrawableKind.PhongShadedSuzanne };
+        var availableDrawables = Enum.GetValues<DrawableKind>();
         var start = Stopwatch.GetTimestamp();
         for (var i = 0; i < count; i++)
         {
