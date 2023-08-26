@@ -71,22 +71,12 @@ internal sealed class GuiManager : GuiState, IDisposable
 
             ImGui.NewLine();
             ImGui.SliderFloat("Ambient", ref MaterialAmbientSlider.Value, MaterialAmbientSlider.Min, MaterialAmbientSlider.Max);
-
-            ImGui.NewLine();
-            ImGui.SliderFloat("Diffuse Intensity", ref MaterialDiffuseIntensitySlider.Value, MaterialDiffuseIntensitySlider.Min, MaterialDiffuseIntensitySlider.Max);
-
-            ImGui.NewLine();
-            ImGui.SliderFloat("Specular Intensity", ref MaterialSpecularIntensitySlider.Value, MaterialSpecularIntensitySlider.Min, MaterialSpecularIntensitySlider.Max);
-
-            ImGui.NewLine();
-            ImGui.SliderFloat("Specular Power", ref MaterialSpecularPowerSlider.Value, MaterialSpecularPowerSlider.Min, MaterialSpecularPowerSlider.Max);
-
-            ImGui.NewLine();
-            ImGui.SliderFloat("Attenuation Constant", ref MaterialAttenuationConstantSlider.Value, MaterialAttenuationConstantSlider.Min, MaterialAttenuationConstantSlider.Max);
-            ImGui.NewLine();
-            ImGui.SliderFloat("Attenuation Linear", ref MaterialAttenuationLinearSlider.Value, MaterialAttenuationLinearSlider.Min, MaterialAttenuationLinearSlider.Max);
-            ImGui.NewLine();
-            ImGui.SliderFloat("Attenuation Quadric", ref MaterialAttenuationQuadricSlider.Value, MaterialAttenuationQuadricSlider.Min, MaterialAttenuationQuadricSlider.Max);
+            ImGui.SliderFloat("Diff Intens", ref MaterialDiffuseIntensitySlider.Value, MaterialDiffuseIntensitySlider.Min, MaterialDiffuseIntensitySlider.Max);
+            ImGui.SliderFloat("Spec Intens", ref MaterialSpecularIntensitySlider.Value, MaterialSpecularIntensitySlider.Min, MaterialSpecularIntensitySlider.Max);
+            ImGui.SliderFloat("Spec Power", ref MaterialSpecularPowerSlider.Value, MaterialSpecularPowerSlider.Min, MaterialSpecularPowerSlider.Max);
+            ImGui.SliderFloat("Att Const", ref MaterialAttenuationConstantSlider.Value, MaterialAttenuationConstantSlider.Min, MaterialAttenuationConstantSlider.Max);
+            ImGui.SliderFloat("Att Linear", ref MaterialAttenuationLinearSlider.Value, MaterialAttenuationLinearSlider.Min, MaterialAttenuationLinearSlider.Max, "%.5f");
+            ImGui.SliderFloat("Att Quad", ref MaterialAttenuationQuadricSlider.Value, MaterialAttenuationQuadricSlider.Min, MaterialAttenuationQuadricSlider.Max, "%.5f");
 
             ImGui.NewLine();
             if (ImGui.Button("Reset light"))
@@ -111,11 +101,11 @@ internal sealed class GuiManager : GuiState, IDisposable
 
             ImGui.NewLine();
 
+            DrawObjectFactory();
+            
             DrawObjectManagement();
 
             ImGui.NewLine();
-
-            DrawObjectFactory();
 
             DrawInfoLog();
         }
@@ -177,12 +167,16 @@ internal sealed class GuiManager : GuiState, IDisposable
     {
         ImGui.Checkbox("Move objects", ref _withMovements);
         ImGui.SameLine();
-        ImGui.Checkbox("Create in random position", ref _createInRandomPosition);
+        ImGui.Checkbox("Random position", ref _createInRandomPosition);
         ImGui.NewLine();
 
-        ClearElementsRequested = ImGui.Button("Clear elements");
+        ClearElementsRequested = ImGui.Button("Clear all");
         ImGui.SameLine();
-        GenerateManyElementsRequested = ImGui.Button("Generate random");
+        ImGui.Spacing();
+        ImGui.SameLine();
+        ImGui.Spacing();
+        ImGui.SameLine();
+        GenerateManyElementsRequested = ImGui.Button("Make many");
         ImGui.NewLine();
     }
 

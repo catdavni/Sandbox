@@ -12,21 +12,21 @@ struct VOut
 {
     float4 Position : SV_POSITION;
     float4 vertex_position : VertexPosition;
-    centroid float4 normal : TEXCOORD1;
+    float3 normal : Normal;
     float2 TexCoord : TEXCOORD0;
 };
 
 VOut VShader(float3 position : POSITION, float3 normal : Normal, float2 texCoord : TexCoord)
 {
-    float4 vertexWorldPosition = mul(ModelToWorld, float4(position, 1.0f));
+    const float4 vertexWorldPosition = mul(ModelToWorld, float4(position, 1.0f));
 
-    float3 normalWorldTranslated = mul((float3x3)ModelToWorld, normal);
-    float3 normalizedTranslatedNormal = normalize(normalWorldTranslated);
+    const float3 normalWorldTranslated = mul((float3x3)ModelToWorld, normal);
+    const float3 normalizedTranslatedNormal = normalize(normalWorldTranslated);
 
     VOut result;
     result.Position = mul(WorldToCameraProjection, vertexWorldPosition);
     result.TexCoord = texCoord;
-    result.normal = float4(normalizedTranslatedNormal, 1);
+    result.normal = normalizedTranslatedNormal;
     result.vertex_position = vertexWorldPosition;
     return result;
 }
@@ -61,45 +61,54 @@ SamplerState samplerState :register(s0);
 
 float4 PShader(VOut pin) : SV_TARGET
 {
-    float3 normalLocal = normalize(pin.normal.xyz);
-    float4 vertexPosition = pin.vertex_position;
+    const float3 normal = normalize(pin.normal);
+    const float3 vertex = pin.vertex_position.xyz;
 
-    const float3 vToL = (LightPosition - vertexPosition).xyz;
-    const float distToL = length(vToL);
-    const float3 dirToL = normalize(vToL);
+    const float3 vertexToLightSource = normalize(LightPosition.xyz - vertex);
+    const float3 vertexToCamera = normalize(CameraPosition.xyz - vertex);
+    const float vertexToLightDistance = length(LightPosition.xyz - vertex);
 
-    // attenuation
-    const float att = 1.0f /
-        (AttenuationConstant + AttenuationLinear * distToL + AttenuationQuadric * (distToL * distToL));
+    const float attenuation = 1 /
+    (
+        AttenuationConstant +
+        AttenuationLinear * vertexToLightDistance +
+        AttenuationQuadric * vertexToLightDistance * vertexToLightDistance
+    );
 
-    // diffuse intensity
-    const float diffuse = DiffuseIntensity * att * max(0.0f, dot(dirToL, normalLocal));
+    if (attenuation > 1)
+    {
+        return float4(1, 1, 0, 0);
+    }
 
-    // reflected light vector
-    float3 w = normalLocal * dot(vToL, normalLocal);
-    float3 r = w * 2.0f - vToL;
+    // diffuse    
+    const float diffuseCoefficient = max(0, dot(vertexToLightSource, normal));
+    const float diffuse = diffuseCoefficient * DiffuseIntensity * attenuation;
 
-    // calculate specular intensity based on angle between viewing vector and reflection vector, narrow with power function
-    const float specular = att * DiffuseIntensity * SpecularIntensity * pow(max(0.0f, dot(normalize(-r), normalize(vertexPosition.xyz))), SpecularPower);
-    // final color
-    return saturate((diffuse + Ambient + specular) * MaterialColor);
+    // if (diffuse > 1)
+    // {
+    //     return float4(1, 0, 0, 0);
+    // }
 
-    // // diffuse
-    // float3 lightToObject = (LightPosition - vertexPosition).xyz;
-    // float3 lightToObjectNormalized = normalize(lightToObject);
-    // float lightNormalCodirection = dot(normalLocal, lightToObjectNormalized);
-    // float lightDistance = length(lightToObject);
-    // float diffuse = max(0, lightNormalCodirection) * MaterialDiffusePower.x / (lightDistance * lightDistance);
-    //
     // // specular
-    // float3 lightToCamera = normalize((CameraPosition - vertexPosition).xyz);
-    // float3 reflectedLight = reflect(-lightToObject, normalLocal);
-    // float reflectedLightWithCameraCoDirection = max(0, dot(lightToCamera, reflectedLight));
-    // float specularIntensity = pow(reflectedLightWithCameraCoDirection, MaterialSpecular_Hardness_Power.x);
-    // float specular = specularIntensity * MaterialSpecular_Hardness_Power.y / (lightDistance * lightDistance);
-    //
-    // const float ambient = 0.2;
-    // float lightAmount = ambient + diffuse + specular;
-    //
+    const float3 reflectedLight = normalize(reflect(-vertexToLightSource, normal));
+
+    const float specularCoefficient = max(0, dot(vertexToCamera, reflectedLight));
+    const float poweredSpecularCoefficient = pow(specularCoefficient, SpecularPower);
+
+    if (poweredSpecularCoefficient > 1)
+    {
+        return float4(0, 1, 0, 0);
+    }
+
+    const float specular = poweredSpecularCoefficient * SpecularIntensity;
+
+    // if (specular > 1)
+    // {
+    //     return float4(0, 0, 1, 0);
+    // }
+
+    // float lightAmount = saturate(Ambient + diffuse + specular) * attenuation;
     // return MaterialColor * lightAmount;
+
+    return saturate(MaterialColor * (Ambient + diffuse + specular)) * attenuation;
 }

@@ -64,7 +64,7 @@ internal abstract class GuiState
     {
         XLightPosition = SliderData.Create(0, -20, 20);
         YLightPosition = SliderData.Create(0, -20, 20);
-        ZLightPosition = SliderData.Create(0, -20, 20);
+        ZLightPosition = SliderData.Create(0, -4, 100);
 
         InitTranslations();
         InitRotations();
@@ -75,7 +75,7 @@ internal abstract class GuiState
     {
         XModelTranslation = SliderData.Create(0, -20, 20);
         YModelTranslation = SliderData.Create(0, -20, 20);
-        ZModelTranslation = SliderData.Create(0, -20, 20);
+        ZModelTranslation = SliderData.Create(0, -20, 150);
     }
 
     protected void InitRotations()
@@ -91,11 +91,11 @@ internal abstract class GuiState
         _materialColor = System.Numerics.Vector4.Zero;
         MaterialAmbientSlider = SliderData.Create(0, -1, 1);
         MaterialDiffuseIntensitySlider = SliderData.Create(0, -3, 3);
-        MaterialSpecularIntensitySlider = SliderData.Create(0, -3, 3);
-        MaterialSpecularPowerSlider = SliderData.Create(0, -3, 3);
-        MaterialAttenuationConstantSlider = SliderData.Create(0, -0.5f, 1);
-        MaterialAttenuationLinearSlider = SliderData.Create(0, -0.5f, 1);
-        MaterialAttenuationQuadricSlider = SliderData.Create(0, -0.5f, 1);
+        MaterialSpecularIntensitySlider = SliderData.Create(0, 0, 10);
+        MaterialSpecularPowerSlider = SliderData.Create(0, 0, 200);
+        MaterialAttenuationConstantSlider = SliderData.Create(0, -1f, 1);
+        MaterialAttenuationLinearSlider = SliderData.Create(0, 0f, 0.01f);
+        MaterialAttenuationQuadricSlider = SliderData.Create(0, 0f, 0.001f);
     }
 
     protected sealed record SliderData(float Min, float Max)

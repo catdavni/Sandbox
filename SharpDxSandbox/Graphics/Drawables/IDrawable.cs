@@ -24,9 +24,9 @@ public readonly record struct TransformationData(Matrix Model, Matrix World, Mat
 public readonly record struct Material(Vector4 MaterialColor, LightTraits LightTraits, Attenuation Attenuation)
 {
     public static Material RandomColor => new(
-        new Vector4(Random.Shared.NextSingle(), Random.Shared.NextSingle(), Random.Shared.NextSingle(), 0), 
-        new LightTraits(0.5f, 1.4f, 2.4f, 4.1f),
-        Attenuation.Create(1.1f, 0.2f, 0f));
+        new Vector4(Random.Shared.NextSingle(), Random.Shared.NextSingle(), Random.Shared.NextSingle(), 0),
+        new LightTraits(Ambient: 0.3f, DiffuseIntensity: 0.7f, SpecularIntensity: 3.0f, SpecularPower: 31f),
+        Attenuation.Create(1f, 0.001f, 0.00002f));
 }
 
 [StructLayout(LayoutKind.Sequential)]

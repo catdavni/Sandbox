@@ -69,7 +69,7 @@ internal sealed class GraphicsSandbox
             var world = Matrix.Translation(_lightSourcePosition.X, _lightSourcePosition.Y, _lightSourcePosition.Z);
 
             var (cameraPosition, cameraDirection) = _cameraView.GetCameraData();
-            _gui.PrintInfo($"Camera position: {cameraPosition.ToString("F2")}");
+            _gui.PrintInfo($"Camera: {cameraPosition.ToString("F2")}");
             var camera = Matrix.LookAtLH(cameraPosition, cameraDirection, Vector3.UnitY);
 
             var projection = _projectionMatrix;
@@ -258,8 +258,8 @@ internal sealed class GraphicsSandbox
     {
         const int count = 1000;
         //const int count = 1;
-        //var availableDrawables = new[] { DrawableKind.PhongShadedSphere, DrawableKind.PhongShadedCube, DrawableKind.PhongShadedSuzanne };
-        var availableDrawables = Enum.GetValues<DrawableKind>();
+        var availableDrawables = new[] { DrawableKind.PhongShadedSphere, DrawableKind.PhongShadedCube, DrawableKind.PhongShadedSuzanne };
+        //var availableDrawables = Enum.GetValues<DrawableKind>();
         var start = Stopwatch.GetTimestamp();
         for (var i = 0; i < count; i++)
         {
