@@ -85,6 +85,9 @@ internal sealed class GraphicsSandbox
         {
             CreateModel(modelState.DrawableKind, restored, modelState);
         }
+        
+        CreateModel(DrawableKind.NanoSuit, restored);
+        
         _modelsState = restored;
     }
 
@@ -250,6 +253,10 @@ internal sealed class GraphicsSandbox
             if (_gui.CreateShadedObjectRequest.PhongShadedSuzanne)
             {
                 CreateModel(DrawableKind.PhongShadedSuzanne);
+            }
+            if (_gui.CreateShadedObjectRequest.NanoSuit)
+            {
+                CreateModel(DrawableKind.NanoSuit);
             }
         }
     }

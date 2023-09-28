@@ -24,6 +24,7 @@ internal static class DrawableFactory
             DrawableKind.PhongShadedSphere => ModelLoader.LoadPhongShaded(device, resourceFactory, Constants.Models.Sphere, true),
             DrawableKind.PhongShadedCube => ModelLoader.LoadPhongShaded(device, resourceFactory, Constants.Models.Cube, true),
             DrawableKind.PhongShadedSuzanne => ModelLoader.LoadPhongShaded(device, resourceFactory, Constants.Models.Suzanne, true),
+            DrawableKind.NanoSuit => ModelLoader.LoadNanoSuit(device, resourceFactory),
             _ => throw new InvalidOperationException($"Model kind {kind} not supported")
         };
 
@@ -49,6 +50,8 @@ internal enum DrawableKind
     
     PhongShadedSphere,
     PhongShadedCube,
-    PhongShadedSuzanne
+    PhongShadedSuzanne,
+    
+    NanoSuit
     
 }

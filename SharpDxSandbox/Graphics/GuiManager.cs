@@ -212,6 +212,7 @@ internal sealed class GuiManager : GuiState, IDisposable
                 CreateShadedObjectRequest = CreateShadedObjectRequest with { PhongShadedSphere = ImGui.Button("Phong shaded sphere") };
                 CreateShadedObjectRequest = CreateShadedObjectRequest with { PhongShadedCube = ImGui.Button("Phong shaded cube") };
                 CreateShadedObjectRequest = CreateShadedObjectRequest with { PhongShadedSuzanne = ImGui.Button("Phong shaded suzanne") };
+                CreateShadedObjectRequest = CreateShadedObjectRequest with { NanoSuit = ImGui.Button("NanoSuit") };
                 ImGui.EndTabItem();
             }
 

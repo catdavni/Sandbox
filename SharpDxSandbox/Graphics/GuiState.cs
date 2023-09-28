@@ -42,19 +42,19 @@ internal abstract class GuiState
 
     public (float Ambient, float DiffuseIntensity, float SpecularIntensity, float SpecularPower) LightTraits
         => (
-            MaterialAmbientSlider.Value, 
-            MaterialDiffuseIntensitySlider.Value, 
+            MaterialAmbientSlider.Value,
+            MaterialDiffuseIntensitySlider.Value,
             MaterialSpecularIntensitySlider.Value,
             MaterialSpecularPowerSlider.Value);
 
     public (float Constant, float Linear, float Quardic) MaterialAttenuation
         => (MaterialAttenuationConstantSlider.Value, MaterialAttenuationLinearSlider.Value, MaterialAttenuationQuadricSlider.Value);
 
-    public SimpleObjectsRequest CreateSimpleObjectRequest { get; protected set; } = new(false, false, false, false);
+    public SimpleObjectsRequest CreateSimpleObjectRequest { get; protected set; }
 
-    public SkinnedObjectRequest CreateSkinnedObjectRequest { get; protected set; } = new(false, false, false);
+    public SkinnedObjectRequest CreateSkinnedObjectRequest { get; protected set; }
 
-    public ShadedObjectRequest CreateShadedObjectRequest { get; protected set; } = new(false, false, false, false, false, false, false);
+    public ShadedObjectRequest CreateShadedObjectRequest { get; protected set; }
 
     public bool CreateInRandomPosition => _createInRandomPosition;
 
@@ -107,9 +107,17 @@ internal abstract class GuiState
         public ref float Value => ref _value;
     }
 
-    public sealed record SimpleObjectsRequest(bool SimpleCube, bool ColoredCube, bool ColoredFromModelFile, bool ColoredSphere);
+    public record struct SimpleObjectsRequest(bool SimpleCube, bool ColoredCube, bool ColoredFromModelFile, bool ColoredSphere);
 
-    public sealed record SkinnedObjectRequest(bool Plane, bool SkinnedCube, bool SkinnedCubeFromModelFile);
+    public record struct SkinnedObjectRequest(bool Plane, bool SkinnedCube, bool SkinnedCubeFromModelFile);
 
-    public sealed record ShadedObjectRequest(bool GouraudShadedSkinnedCube, bool GouraudShadedSphere, bool GouraudSmoothShadedSphere, bool GouraudShadedSuzanne, bool PhongShadedSphere, bool PhongShadedCube, bool PhongShadedSuzanne);
+    public record struct ShadedObjectRequest(
+        bool GouraudShadedSkinnedCube,
+        bool GouraudShadedSphere,
+        bool GouraudSmoothShadedSphere,
+        bool GouraudShadedSuzanne,
+        bool PhongShadedSphere,
+        bool PhongShadedCube,
+        bool PhongShadedSuzanne,
+        bool NanoSuit);
 }

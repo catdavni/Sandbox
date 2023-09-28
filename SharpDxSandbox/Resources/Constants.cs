@@ -15,6 +15,11 @@ public static class Constants
         public const string Cube = "cube.obj";
         public const string Sphere = "sphere.obj";
         public const string Suzanne = "suzanne.obj";
+
+        public static class NanoSuit
+        {
+            public const string ModelName = "NanoSuit\\nanosuit.obj";
+        }
     }
     
     public static class Shaders

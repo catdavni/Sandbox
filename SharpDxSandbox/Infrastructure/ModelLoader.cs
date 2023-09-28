@@ -6,12 +6,17 @@ using SharpDX.Mathematics.Interop;
 using SharpDxSandbox.Graphics;
 using SharpDxSandbox.Graphics.Drawables;
 using SharpDxSandbox.Infrastructure.Disposables;
+using SharpDxSandbox.Resources;
 
 namespace SharpDxSandbox.Infrastructure;
 
 internal static class ModelLoader
 {
-    private static readonly string ModelsPath = Path.Combine("Resources", "Models");
+    private static readonly string[] ModelsPath =
+    {
+        Path.Combine("Resources", "Models"),
+        Path.Combine("Resources", "Models", "NanoSuit")
+    };
     private static readonly Dictionary<string, Scene> SceneCache = new();
 
     public static FromModel LoadSimple(Device device, IResourceFactory resourceFactory, string modelName)
@@ -57,6 +62,21 @@ internal static class ModelLoader
         return new PhongShadedFromModel(device, resourceFactory, vertices, indices, normals, modelKey);
     }
 
+    public static IDrawable LoadNanoSuit(Device device, IResourceFactory resourceFactory)
+    {
+        var scene = EnsureScene(Constants.Models.NanoSuit.ModelName, false);
+        var parts = scene.Meshes.Select(m => new PhongShadedFromModel(
+                device,
+                resourceFactory,
+                m.Vertices.Select(v => new RawVector3(v.X, v.Y, v.Z)).ToArray(),
+                m.GetIndices(),
+                m.Normals.Select(v => new RawVector3(v.X, v.Y, v.Z)).ToArray(),
+                m.Name))
+            .ToArray();
+
+        return new NanoSuit(parts);
+    }
+
     private static (RawVector3[] Vertices, int[] Indices, RawVector3[] Normals) LoadModel(string modelName, bool smoothNormals)
     {
         var scene = EnsureScene(modelName, smoothNormals);
@@ -100,7 +120,7 @@ internal static class ModelLoader
         var fs = new FileIOSystem(ModelsPath).DisposeWith(disposables);
 
         var context = new AssimpContext().DisposeWith(disposables);
-                AssimpLibrary.Instance.ThrowOnLoadFailure = false;
+        AssimpLibrary.Instance.ThrowOnLoadFailure = false;
         context.SetIOSystem(fs);
 
         return new Disposable<AssimpContext>(context, disposables);
