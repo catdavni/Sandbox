@@ -17,7 +17,7 @@ internal sealed class NanoSuit : IDrawable
         var newTransformationData = () =>
         {
             var global = transformationData();
-            return global with { Model = Matrix.Scaling(0.1f)  * global.Model };
+            return global with { Model = Matrix.Scaling(0.2f)  * global.Model };
         };
         foreach (var part in _parts)
         {

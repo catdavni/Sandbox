@@ -65,13 +65,17 @@ internal static class ModelLoader
     public static IDrawable LoadNanoSuit(Device device, IResourceFactory resourceFactory)
     {
         var scene = EnsureScene(Constants.Models.NanoSuit.ModelName, false);
-        var parts = scene.Meshes.Select(m => new PhongShadedFromModel(
-                device,
-                resourceFactory,
-                m.Vertices.Select(v => new RawVector3(v.X, v.Y, v.Z)).ToArray(),
-                m.GetIndices(),
-                m.Normals.Select(v => new RawVector3(v.X, v.Y, v.Z)).ToArray(),
-                m.Name))
+        var centroid = scene.CalculateCentroid();
+
+        var parts = scene.Meshes.Select(
+                m =>
+                    new PhongShadedFromModel(
+                        device,
+                        resourceFactory,
+                        m.Vertices.Select(v => v.ApplyCentroid(centroid)).ToArray(),
+                        m.GetIndices(),
+                        m.Normals.Select(v => new RawVector3(v.X, v.Y, v.Z)).ToArray(),
+                        m.Name))
             .ToArray();
 
         return new NanoSuit(parts);
@@ -125,4 +129,24 @@ internal static class ModelLoader
 
         return new Disposable<AssimpContext>(context, disposables);
     }
+}
+
+file static class PrimitiveExtensions
+{
+    public static Vector3D CalculateCentroid(this Scene scene)
+    {
+        var centroid = new Vector3D(0, 0, 0);
+        var totalVertices = 0;
+
+        foreach (var mesh in scene.Meshes)
+        {
+            totalVertices += mesh.VertexCount;
+            centroid = mesh.Vertices.Aggregate(centroid, (current, vertex) => current + vertex);
+        }
+        centroid /= totalVertices;
+        return centroid;
+    }
+
+    public static RawVector3 ApplyCentroid(this Vector3D source, Vector3D centroid)
+        => new(source.X - centroid.X, source.Y - centroid.Y, source.Z - centroid.Z);
 }
