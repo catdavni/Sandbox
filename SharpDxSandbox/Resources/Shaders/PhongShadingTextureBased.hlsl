@@ -1,11 +1,11 @@
 ﻿cbuffer TransformMatrix : register(b0)
 {
-float4x4 ModelToWorld;
+    float4x4 ModelToWorld;
 }
 
 cbuffer WorldToCameraProjection : register(b1)
 {
-float4x4 WorldToCameraProjection;
+    float4x4 WorldToCameraProjection;
 }
 
 struct VOut
@@ -33,31 +33,34 @@ VOut VShader(float3 position : POSITION, float3 normal : Normal, float2 texCoord
 
 cbuffer LightPosition: register(b0)
 {
-float4 LightPosition;
+    float4 LightPosition;
 }
 
 cbuffer CameraPosition: register(b1)
 {
-float4 CameraPosition;
+    float4 CameraPosition;
 }
 
 cbuffer Material:register(b2)
 {
-float4 MaterialColor;
+    float4 MaterialColor;
 
-float Ambient;
-float DiffuseIntensity;
-float SpecularIntensity;
-float SpecularPower;
+    float Ambient;
+    float DiffuseIntensity;
+    float SpecularIntensity;
+    float SpecularPower;
 
-float AttenuationConstant;
-float AttenuationLinear;
-float AttenuationQuadric;
-float NOT_USED_ALIGN_PLACEHOLDER;
+    float AttenuationConstant;
+    float AttenuationLinear;
+    float AttenuationQuadric;
+    float HasSpecularTexture;
 }
 
-Texture2D tex;
-SamplerState samplerState :register(s0);
+Texture2D diffuseTexture : register(t0);
+Texture2D specularTexture: register(t1);
+SamplerState textureSampler :register(s0);
+
+static const float linearSpecularPowerMultiplier = 100.0f;
 
 float4 PShader(VOut pin) : SV_TARGET
 {
@@ -75,40 +78,36 @@ float4 PShader(VOut pin) : SV_TARGET
         AttenuationQuadric * vertexToLightDistance * vertexToLightDistance
     );
 
-    if (attenuation > 1)
-    {
-        return float4(1, 1, 0, 0);
-    }
+    // if (attenuation > 1)
+    // {
+    //     return float4(1, 1, 0, 0);
+    // }
 
     // diffuse    
     const float diffuseCoefficient = max(0, dot(vertexToLightSource, normal));
-    const float diffuse = diffuseCoefficient * DiffuseIntensity;
+    const float diffuse = diffuseCoefficient + DiffuseIntensity;
 
     // if (diffuse > 1)
     // {
     //     return float4(1, 0, 0, 0);
     // }
 
-    // // specular
-    const float3 reflectedLight = normalize(reflect(-vertexToLightSource, normal));
+    const float3 diffuseColor = diffuseTexture.Sample(textureSampler, pin.TexCoord).rgb;
+    const float3 diffuseFinal = (Ambient + diffuse) * diffuseColor;
 
+    // specular
+    const float3 reflectedLight = normalize(reflect(-vertexToLightSource, normal));
     const float specularCoefficient = max(0, dot(vertexToCamera, reflectedLight));
-    const float poweredSpecularCoefficient = pow(specularCoefficient, SpecularPower);
+    const float4 specularData = specularTexture.Sample(textureSampler, pin.TexCoord);
+    const float calculatedSpecularPower =  SpecularPower + specularData.a * linearSpecularPowerMultiplier;
+    const float poweredSpecularCoefficient = pow(specularCoefficient, calculatedSpecularPower);
 
     if (poweredSpecularCoefficient > 1)
     {
         return float4(0, 1, 0, 0);
     }
 
-    const float specular = poweredSpecularCoefficient * SpecularIntensity;
+    const float3 specularFinal = (SpecularIntensity * poweredSpecularCoefficient) * specularData.rgb;
 
-    // if (specular > 1)
-    // {
-    //     return float4(0, 0, 1, 0);
-    // }
-
-    // float lightAmount = saturate(Ambient + diffuse + specular) * attenuation;
-    // return MaterialColor * lightAmount;
-
-    return saturate(MaterialColor * (Ambient + diffuse + specular)) * attenuation;
+    return float4(saturate(diffuseFinal + specularFinal) * attenuation, 1.0f);
 }

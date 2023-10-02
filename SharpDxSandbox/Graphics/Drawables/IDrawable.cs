@@ -21,20 +21,20 @@ public readonly record struct TransformationData(Matrix Model, Matrix World, Mat
 }
 
 [StructLayout(LayoutKind.Sequential)]
-public readonly record struct Material(Vector4 MaterialColor, LightTraits LightTraits, Attenuation Attenuation)
+public readonly record struct Material(Vector4 MaterialColor, LightTraits LightTraits, Attenuation Attenuation, float PLACEHOLDER_NOT_USED = 0f)
 {
     public static Material RandomColor => new(
         new Vector4(Random.Shared.NextSingle(), Random.Shared.NextSingle(), Random.Shared.NextSingle(), 0),
         new LightTraits(Ambient: 0.3f, DiffuseIntensity: 0.7f, SpecularIntensity: 3.0f, SpecularPower: 31f),
-        Attenuation.Create(1f, 0.001f, 0.00002f));
+        Attenuation.Create(1f, 0.001f, 0.00002f), 0f);
 }
 
 [StructLayout(LayoutKind.Sequential)]
 public readonly record struct LightTraits(float Ambient, float DiffuseIntensity, float SpecularIntensity, float SpecularPower);
 
 [StructLayout(LayoutKind.Sequential)]
-public readonly record struct Attenuation(float Constant, float Linear, float Quadric, float NOT_USED_ALIGN_PLACEHOLDER)
+public readonly record struct Attenuation(float Constant, float Linear, float Quadric)
 {
     public static Attenuation Create(float constant, float linear, float quadric)
-        => new(constant, linear, quadric, float.MinValue);
+        => new(constant, linear, quadric);
 }

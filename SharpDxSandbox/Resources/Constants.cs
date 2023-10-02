@@ -18,7 +18,8 @@ public static class Constants
 
         public static class NanoSuit
         {
-            public const string ModelName = "NanoSuit\\nanosuit.obj";
+            public const string FolderName = "NanoSuit";
+            public const string ModelName = "nanosuit.obj";
         }
     }
     
@@ -30,5 +31,6 @@ public static class Constants
         public const string LightSource = "LightSource.hlsl";
         public const string GouraudShading = "GouraudShading.hlsl";
         public const string PhongShading = "PhongShading.hlsl";
+        public const string PhongShadingTextureBased = "PhongShadingTextureBased.hlsl";
     }
 }

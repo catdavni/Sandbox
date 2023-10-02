@@ -108,7 +108,7 @@ internal sealed class GraphicsSandbox
                 specularIntensity + _gui.LightTraits.SpecularIntensity,
                 specularPower + _gui.LightTraits.SpecularPower);
 
-            var (constant, linear, quadric, _) = m.Attenuation;
+            var (constant, linear, quadric) = m.Attenuation;
             var newAttenuation = Attenuation.Create(
                 constant + _gui.MaterialAttenuation.Constant,
                 linear + _gui.MaterialAttenuation.Linear,

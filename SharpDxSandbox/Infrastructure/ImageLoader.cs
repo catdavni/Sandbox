@@ -19,4 +19,13 @@ internal static class ImageLoader
         frameConverter.Initialize(frame, SharpDX.WIC.PixelFormat.Format32bppPBGRA);
         return new SharpDX.WIC.Bitmap(imageFactory, frameConverter, SharpDX.WIC.BitmapCreateCacheOption.CacheOnLoad);
     }
+
+    public static SharpDX.WIC.Bitmap LoadBlack()
+    {
+        using var imageFactory = new SharpDX.WIC.ImagingFactory2();
+        const int size = 100;
+        const int stride = size;
+        var data = new int[stride * size];
+        return SharpDX.WIC.Bitmap.New(imageFactory, size, size, SharpDX.WIC.PixelFormat.Format32bppPBGRA, data);
+    }
 }

@@ -1,22 +1,22 @@
 ﻿using System.Diagnostics;
 using Assimp;
 using Assimp.Unmanaged;
+using SharpDX;
 using SharpDX.Direct3D11;
 using SharpDX.Mathematics.Interop;
 using SharpDxSandbox.Graphics;
 using SharpDxSandbox.Graphics.Drawables;
 using SharpDxSandbox.Infrastructure.Disposables;
 using SharpDxSandbox.Resources;
+using Material = SharpDxSandbox.Graphics.Drawables.Material;
 
 namespace SharpDxSandbox.Infrastructure;
 
 internal static class ModelLoader
 {
-    private static readonly string[] ModelsPath =
-    {
-        Path.Combine("Resources", "Models"),
-        Path.Combine("Resources", "Models", "NanoSuit")
-    };
+    private static readonly string ModelsPath = Path.Combine("Resources", "Models");
+    private static readonly string NanoSuitPath = Path.Combine(ModelsPath, "NanoSuit");
+
     private static readonly Dictionary<string, Scene> SceneCache = new();
 
     public static FromModel LoadSimple(Device device, IResourceFactory resourceFactory, string modelName)
@@ -64,18 +64,39 @@ internal static class ModelLoader
 
     public static IDrawable LoadNanoSuit(Device device, IResourceFactory resourceFactory)
     {
+        //var model = SharpGLTF.Schema2.ModelRoot.Load(Path.Combine(NanoSuitPath, Constants.Models.NanoSuit.ComplexModelName));
+
         var scene = EnsureScene(Constants.Models.NanoSuit.ModelName, false);
         var centroid = scene.CalculateCentroid();
 
         var parts = scene.Meshes.Select(
-                m =>
-                    new PhongShadedFromModel(
+                mesh =>
+                {
+                    //var modelMaterial = model.LogicalMaterials.Single(material => material.Name == mesh.Name);
+
+                    // var baseColorChannel = modelMaterial.FindChannel("BaseColor");
+                    // var baseColor = baseColorChannel.Value.Parameter;
+                    //
+                    // var material = Material.RandomColor with { MaterialColor = new Vector4(baseColor.X, baseColor.Y, baseColor.Z, baseColor.W) };
+                    // new Material(
+                    // new Vector4(baseColor.X, baseColor.Y, baseColor.Z, baseColor.W),
+                    // default,
+                    // default);
+
+                    var vertices = mesh.Vertices.Select(v => v.ApplyCentroid(centroid));
+                    var normals = mesh.Normals.Select(v => new RawVector3(v.X, v.Y, v.Z));
+                    var texCoords = mesh.TextureCoordinateChannels.Single(c => c.Count > 0).Select(t => new RawVector2(t.X, t.Y));
+
+                    var verticesWithNormals = vertices.Zip(normals, texCoords).Select(v => new Vertex_Normal_TexCoord(v.First, v.Second, v.Third)).ToArray();
+
+                    return new PhongTextureColored(
                         device,
                         resourceFactory,
-                        m.Vertices.Select(v => v.ApplyCentroid(centroid)).ToArray(),
-                        m.GetIndices(),
-                        m.Normals.Select(v => new RawVector3(v.X, v.Y, v.Z)).ToArray(),
-                        m.Name))
+                        verticesWithNormals,
+                        mesh.GetIndices(),
+                        mesh.Name,
+                        scene.Materials[mesh.MaterialIndex]);
+                })
             .ToArray();
 
         return new NanoSuit(parts);
@@ -121,7 +142,7 @@ internal static class ModelLoader
         var logStream = new ConsoleLogStream(nameof(ModelLoader)).DisposeWith(disposables);
         logStream.Attach();
 
-        var fs = new FileIOSystem(ModelsPath).DisposeWith(disposables);
+        var fs = new FileIOSystem(ModelsPath, NanoSuitPath).DisposeWith(disposables);
 
         var context = new AssimpContext().DisposeWith(disposables);
         AssimpLibrary.Instance.ThrowOnLoadFailure = false;
