@@ -6,5 +6,5 @@ public interface ISomeInterface
 
     public int SomeInt { get; }
 
-    public void SomeMethod();
+    public int SomeMethod();
 }

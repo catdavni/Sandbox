@@ -159,13 +159,13 @@ public class RoslynSandbox
 
             public int SomeInt { get; }
 
-            public void SomeMethod()
+            public int SomeMethod()
             {
                 var a = DateTime.Now.Hour;
                 var b = DateTime.Now.DayOfWeek;
-                var c = a + b;
-                Console.WriteLine(c);
-                Console.WriteLine(c);
+                Console.WriteLine(a);
+                Console.WriteLine(b);
+                return a;
             }
         }
         """;

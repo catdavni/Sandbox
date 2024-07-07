@@ -17,12 +17,13 @@ class @this.Model.ClassName : @Model.Inherit
 
     public int SomeInt { get; }
 
-    public void SomeMethod()
+    public int SomeMethod()
     {
         var a = DateTime.Now.Hour;
         var b = DateTime.Now.DayOfWeek;
         var c = a + b;
-        Console.WriteLine(c);
-        Console.WriteLine(c);
+        return a;
+        //Console.WriteLine(c);
+        //Console.WriteLine(c);
     }
 }
